@@ -1,0 +1,69 @@
+import { readFileSync } from 'node:fs';
+
+const files = {
+  customer: readFileSync(new URL('../index.html', import.meta.url), 'utf8'),
+  rider: readFileSync(new URL('../rider.html', import.meta.url), 'utf8'),
+  store: readFileSync(new URL('../store.html', import.meta.url), 'utf8'),
+  reviewMigration: readFileSync(new URL('../supabase/migrations/20260814_review_legacy_customer_email.sql', import.meta.url), 'utf8'),
+  errorMigration: readFileSync(new URL('../supabase/migrations/20260814_error_monitoring_center.sql', import.meta.url), 'utf8'),
+  retentionMigration: readFileSync(new URL('../supabase/migrations/20260814_error_monitoring_retention.sql', import.meta.url), 'utf8'),
+  retentionFunction: readFileSync(new URL('../supabase/functions/error-retention-cleanup/index.ts', import.meta.url), 'utf8'),
+  notFound: readFileSync(new URL('../404.html', import.meta.url), 'utf8'),
+};
+files.customerErrorMonitor = files.customer.match(/const ErrorMonitor=[\s\S]*?ErrorMonitor\.init\(\);/)?.[0] || '';
+
+const requirements = [
+  ['Customer/Admin: สมัครสมาชิกและสร้างโปรไฟล์', files.customer, /RegistrationUX[\s\S]*createAccount[\s\S]*user_profiles/],
+  ['Customer/Admin: CRM โหลดรายชื่อลูกค้าจาก Supabase', files.customer, /CustomerDirectory[\s\S]*user_profiles\?select=user_id,email,display_name/],
+  ['Customer/Admin: ยอมรับเงื่อนไขและนโยบายก่อนสมัคร', files.customer, /registrationCustomerConsent[\s\S]*registrationCustomerLocationNotice[\s\S]*type="checkbox" required/],
+  ['Customer/Admin: checkbox การยินยอมไม่ถูกติ๊กล่วงหน้า', files.customer, /<input id="registrationCustomerConsent" type="checkbox" required \/>[\s\S]*<input id="registrationCustomerLocationNotice" type="checkbox" required \/>/],
+  ['Customer/Admin: URL เปิดฟอร์มสมัครตามประเภท', files.customer, /RegistrationEntryRoute[\s\S]*get\('register'\)[\s\S]*\['customer','rider'\]/],
+  ['Customer/Admin: ย้อนกลับและคงข้อมูลฟอร์ม', files.customer, /(?=[\s\S]*NavigationUX)(?=[\s\S]*apcx_customer_form_drafts_v1)(?=[\s\S]*history\.pushState)/],
+  ['Customer/Admin: ส่ง metadata การยินยอมตอนสมัคร', files.customer, /privacy_policy_accepted[\s\S]*location_service_notice_accepted/],
+  ['Customer/Admin: ขอ GPS ครั้งแรกโดยไม่ถามซ้ำทุกออร์เดอร์', files.customer, /PrivacyUX[\s\S]*ensureFirstLocationUse[\s\S]*requestPosition/],
+  ['Customer/Admin: หน้าร้านจัดเมนูแบบการ์ดแนวตั้งสำหรับมือถือ', files.customer, /@media\(max-width:580px\)[\s\S]*#view-storefront \.food-grid\{grid-template-columns:1fr/],
+  ['Customer/Admin: แผนที่กลับสู่ตำแหน่งปัจจุบันได้และให้พิกัดลูกค้ามาก่อนค่าเริ่มต้น', files.customer, /(?=[\s\S]*mapFocusLocation)(?=[\s\S]*focusMapOnCurrentLocation)(?=[\s\S]*customerPoint)(?=[\s\S]*configuredPoint)/],
+  ['Customer/Admin: รีวิวเฉพาะร้านหรือ Rider ที่ผูกกับออร์เดอร์', files.customer, /reviewTargets[\s\S]*reviewTargetRatings[\s\S]*reviewTargetLabel/],
+  ['Supabase: รีวิวออร์เดอร์เดิมตรวจเจ้าของจากอีเมลเมื่อยังไม่มี customer_id', files.reviewMigration, /o\.customer_id IS NULL[\s\S]*customer_email[\s\S]*auth\.jwt\(\)/],
+  ['Customer/Admin: แอดมินจัดการคำขอถอนเงิน', files.customer, /admin_review_withdrawal/],
+  ['Customer/Admin: AP Ride และคัดเลือก Rider', files.customer, /list_eligible_ride_riders/],
+  ['Customer/Admin: เลือกคลังไฟล์และกล้องแยกชัดในช่องรูปภาพ', files.customer, /(?=[\s\S]*ImageSourceChoices)(?=[\s\S]*removeAttribute\('capture'\))(?=[\s\S]*เลือกจากคลังไฟล์)(?=[\s\S]*ถ่ายรูปด้วยกล้อง)/],
+  ['Rider: แยก session ตามบทบาท', files.rider, /apcx_rider_supabase_session/],
+  ['Rider: คำขอถอนเงินผ่าน RPC', files.rider, /request_full_wallet_withdrawal/],
+  ['Rider: ข้อความ GPS แยกตามสาเหตุ', files.rider, /gpsErrorMessage/],
+  ['Rider: ตรวจระยะ GPS ก่อนปิดงาน', files.rider, /verifyDeliveryGps/],
+  ['Rider: ปุ่มย้อนกลับและคงข้อมูลฟอร์ม', files.rider, /(?=[\s\S]*riderBackButton)(?=[\s\S]*RiderNavigationUX)(?=[\s\S]*apcx_rider_form_drafts_v1)/],
+  ['Rider: เลือกคลังไฟล์ กล้อง และบีบอัดหลักฐานจริง', files.rider, /(?=[\s\S]*ImageSourceChoices)(?=[\s\S]*removeAttribute\('capture'\))(?=[\s\S]*เลือกจากคลังไฟล์)(?=[\s\S]*ถ่ายรูปด้วยกล้อง)(?=[\s\S]*compressRiderProofImage)/],
+  ['Store: แยก session ตามบทบาท', files.store, /apcx_store_supabase_session/],
+  ['Store: จัดการเมนูผ่านฐานข้อมูล', files.store, /createFood[\s\S]*menu_items/],
+  ['Store: คำขอถอนเงินผ่าน RPC', files.store, /request_full_wallet_withdrawal/],
+  ['Store: เลือกคลังไฟล์และกล้องแยกชัดในช่องรูปภาพ', files.store, /(?=[\s\S]*StoreImageSourceChoices)(?=[\s\S]*removeAttribute\('capture'\))(?=[\s\S]*เลือกจากคลังไฟล์)(?=[\s\S]*ถ่ายรูปด้วยกล้อง)/],
+  ['Store: ยอดขายรวมและยอดพร้อมถอนแสดงบนหน้าแรก', files.store, /StoreDashboardFinance[\s\S]*ยอดขายทั้งหมด[\s\S]*พร้อมถอน/],
+  ['Store: ปุ่มย้อนกลับและคงข้อมูลฟอร์ม', files.store, /(?=[\s\S]*storeBackButton)(?=[\s\S]*StoreNavigationUX)(?=[\s\S]*apcx_store_form_drafts_v1)/],
+  ['Store: เลือกได้ทั้งคลังไฟล์และกล้อง', files.store, /StoreImageSourceChoices[\s\S]*removeAttribute\('capture'\)[\s\S]*ถ่ายรูปด้วยกล้อง/],
+  ['Customer/Admin: ศูนย์ติดตาม error และปุ่มส่งให้ตรวจสอบ', files.customer, /ErrorMonitor[\s\S]*error_reports[\s\S]*ส่งให้ตรวจสอบ[\s\S]*อนุมัติวิเคราะห์/],
+  ['Customer/Admin: ป้องกันข้อมูลอ่อนไหวและรวม error ซ้ำ', files.customer, /PUBLISHABLE_KEY_REDACTED[\s\S]*Date\.now\(\)-last<120000/],
+  ['Customer/Admin: ไม่ติดตามการคลิกหรือการเคลื่อนไหวทุกครั้ง', files.customerErrorMonitor, /^(?![\s\S]*addEventListener\('(?:click|mousemove|scroll))(?=[\s\S]*window\.addEventListener\('error')/],
+  ['Rider: รายงาน error แบบ background และแนบภาพ private', files.rider, /RiderErrorMonitor[\s\S]*error-evidence[\s\S]*SUPABASE_REQUEST/],
+  ['Store: รายงาน error แบบ background และแนบภาพ private', files.store, /StoreErrorMonitor[\s\S]*error-evidence[\s\S]*SUPABASE_REQUEST/],
+  ['Supabase: error report กรองข้อความ ตั้ง RLS และเก็บหลักฐาน private', files.errorMigration, /redact_error_text[\s\S]*error_reports[\s\S]*ENABLE ROW LEVEL SECURITY[\s\S]*INSERT INTO storage\.buckets[\s\S]*error-evidence[\s\S]*false/],
+  ['404: มีปุ่มกลับหน้าก่อนหน้าและหน้าแรก', files.notFound, /history\.back\(\)[\s\S]*index\.html/],
+  ['Customer/Admin: แสดงนโยบายประหยัดพื้นที่และปุ่มล้างเฉพาะข้อมูลหมดอายุ', files.customer, /นโยบายประหยัดพื้นที่[\s\S]*ภาพแจ้งปัญหาเก็บ 14 วัน[\s\S]*runErrorRetentionCleanup/],
+  ['Supabase: นโยบายเก็บภาพ 14 วัน log 30 วัน และจำกัดไฟล์ 1 MB', files.retentionMigration, /(?=[\s\S]*file_size_limit = 1000000)(?=[\s\S]*error-retention-cleanup)(?=[\s\S]*pg_cron)/],
+  ['Supabase: scheduler เรียกฟังก์ชันผ่าน Vault และ Authorization', files.retentionMigration, /(?=[\s\S]*vault\.decrypted_secrets)(?=[\s\S]*Authorization)(?=[\s\S]*error-retention-cleanup)/],
+  ['Edge Function: ลบภาพผ่าน Storage API ก่อนลบ error log ที่หมดอายุ', files.retentionFunction, /IMAGE_RETENTION_DAYS = 14[\s\S]*LOG_RETENTION_DAYS = 30[\s\S]*storage\.from\('error-evidence'\)\.remove[\s\S]*from\('error_reports'\)\.delete/],
+  ['Edge Function: ห้ามแตะตารางข้อมูลธุรกิจในการล้างข้อมูล', files.retentionFunction, /^(?![\s\S]*(?:from\('delivery_orders'\)|from\('wallet_transactions'\)|from\('stores'\)|from\('riders'\)|from\('user_profiles'\)))[\s\S]*error_reports/],
+  ['Customer/Admin: ซ่อนปุ่มลอยและย้ายแจ้งปัญหาไว้ในเมนูโปรไฟล์', files.customer, /(?=[\s\S]*\.error-report-fab\{display:none!important\})(?=[\s\S]*ความช่วยเหลือและการแจ้งปัญหา)(?=[\s\S]*openErrorReport)/],
+  ['Customer/Admin: ฟอร์มแจ้งปัญหาปิดได้ด้วยฉากหลังหรือ Escape', files.customer, /safeDismiss[\s\S]*pointerdown[\s\S]*event\.key==='Escape'/],
+  ['Rider: ซ่อนปุ่มลอยและย้ายแจ้งปัญหาไว้หน้า Settings', files.rider, /ความช่วยเหลือและการแจ้งปัญหา[\s\S]*openRiderErrorReport[\s\S]*\.error-report-fab\{display:none!important/],
+  ['Rider: ฟอร์มแจ้งปัญหาปิดได้ด้วยฉากหลังหรือ Escape', files.rider, /safeDismiss[\s\S]*pointerdown[\s\S]*event\.key==='Escape'/],
+  ['Store: ซ่อนปุ่มลอยและย้ายแจ้งปัญหาไว้หน้าโปรไฟล์ร้าน', files.store, /ความช่วยเหลือและการแจ้งปัญหา[\s\S]*openStoreErrorReport[\s\S]*\.error-report-fab\{display:none!important/],
+  ['Store: ฟอร์มแจ้งปัญหาปิดได้ด้วยฉากหลังหรือ Escape', files.store, /safeDismiss[\s\S]*pointerdown[\s\S]*event\.key==='Escape'/],
+];
+
+const failed = requirements.filter(([, content, pattern]) => !pattern.test(content));
+for (const [label, content, pattern] of requirements) {
+  console.log(`${failed.some(([failedLabel]) => failedLabel === label) ? 'FAIL' : 'PASS'}: ${label}`);
+}
+if (failed.length) process.exit(1);
+console.log(`PASS: ตรวจ contract ฟังก์ชันสำคัญครบ ${requirements.length} รายการ`);
