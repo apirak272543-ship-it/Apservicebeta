@@ -1,15 +1,14 @@
-# AP Service
+# AP Service — Admin Beta
 
-ชุดเว็บ HTML สำหรับระบบเดลิเวอรีแบบหลายบทบาท ประกอบด้วยหน้าเว็บหลักสำหรับลูกค้า, Rider Console และ Store Console
+Repository นี้เป็น **Admin Application เท่านั้น** ของ AP Service
 
-| URL หลังเปิด GitHub Pages | หน้าที่ใช้ |
+| Repository | บทบาท |
 |---|---|
-| `/` | เว็บหลัก AP Service สำหรับลูกค้าและผู้ดูแลระบบ |
-| `/rider.html` | Rider Console สำหรับรับงาน เปิดแผนที่ และอัปเดตสถานะ |
-| `/store.html` | Store Console สำหรับร้านค้าจัดการเมนู สต็อก และออร์เดอร์ |
+| `Apservice-` | Customer Application |
+| `Apservicebeta` | Admin Application |
+| `ap-store-mobile` | Merchant Application |
+| `ap-rider-mobile` | Rider Application |
 
-## เริ่มต้นใช้งาน
+Admin MPA อยู่ใน `admin/` และหน้าแรกของ repository จะพาไปที่ `admin/` โดยตรง ทุกหน้าใช้ Supabase, Auth, RLS และ business rules ชุดกลางร่วมกับแอปบทบาทอื่น แต่ source code และ deployment แยกตาม repository
 
-เปิดหน้าเว็บหลักก่อน แล้วเข้าสู่ระบบด้วยบัญชีแอดมินเพื่อแก้ไขร้านค้า เมนู การตั้งค่า Supabase และเผยแพร่แค็ตตาล็อกขึ้นฐานข้อมูลกลาง หากต้องการใช้งานข้ามอุปกรณ์ ให้ผู้ปฏิบัติงานเข้าสู่ระบบ Supabase จากเว็บหลักบนอุปกรณ์ของตนก่อนเปิด Rider Console หรือ Store Console
-
-> Publishable Key ของ Supabase สามารถอยู่ในไฟล์เว็บสาธารณะได้ตามการออกแบบของ Supabase แต่ห้ามเพิ่ม Service Role Key, Secret Key หรือรหัสผ่านลงใน Repository นี้โดยเด็ดขาด
+`admin.html` ยังคงเป็น legacy fallback ระหว่าง migration และเปิดผ่าน More menu ของ Admin MPA ได้ หน้านี้ไม่มี Customer, Merchant หรือ Rider application entry point
