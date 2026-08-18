@@ -1,16 +1,19 @@
 const fs = require('fs');
 const assert = require('assert');
 
-const source = fs.readFileSync('admin_contact_ui_patch.js', 'utf8');
-const index = fs.readFileSync('index.html', 'utf8');
+const admin = fs.readFileSync('admin/admin-app.js', 'utf8');
+const media = fs.readFileSync('shared/ap-service-media.js', 'utf8');
 
-assert.match(source, /\^data:image\\\/\/i\.test/, 'ต้องใช้ regex data:image ที่ปิด literal ถูกต้อง');
-assert.doesNotMatch(source, /\^data:image\\\\\/\/i\.test/, 'ห้าม escape backslash ซ้ำจน i กลายเป็นตัวแปร');
-assert.match(source, /data-store-detail-image-input/, 'แท็บรูปและสื่อต้องมีช่องเลือกไฟล์');
-assert.match(source, /uploadCatalogMedia\(file, `store-detail-\$\{field\}`\)/, 'การอัปโหลดรูปต้องผ่าน Shared Media Service ก่อนบันทึก');
-assert.match(source, /useStoreDetailCurrentLocation\(\)/, 'แท็บเวลาและโลเคชันต้องมีปุ่มใช้ตำแหน่งปัจจุบัน');
-assert.match(source, /pickStoreDetailLocation\('/, 'แท็บเวลาและโลเคชันต้องมีปุ่มเลือกพิกัดบนแผนที่');
-assert.match(index, /\^data:image\\\/\/i\.test/, 'ตัวตรวจภาพจากหน้าหลักต้องใช้ regex ที่ปิด literal ถูกต้อง');
-assert.doesNotMatch(index, /\^data:image\\\\\/\/i\.test/, 'หน้าหลักห้ามมี regex รูปภาพที่ escape ซ้ำ');
+assert.match(admin, /const openMediaEditor = row =>/, 'หน้า Stores ต้องมี native media editor');
+assert.match(admin, /data-media="image_url"/, 'media editor ต้องมีช่องอัปโหลดไอคอนร้าน');
+assert.match(admin, /data-media="background_url"/, 'media editor ต้องมีช่องอัปโหลดภาพพื้นหลังร้าน');
+assert.match(admin, /accept="image\/jpeg,image\/png,image\/webp"/, 'media editor ต้องจำกัดไฟล์เป็น JPG, PNG หรือ WebP');
+assert.match(admin, /uploadPublicCatalogImage\(file/, 'รูปไอคอนและพื้นหลังร้านต้องผ่าน Shared Media Service');
+assert.match(admin, /scope: `store-\$\{row\.id\}-\$\{field\}`/, 'การอัปโหลดร้านต้องแยก scope ตามร้านและ field');
+assert.match(admin, /draft\[field\] = uploaded\.publicUrl/, 'media editor ต้องบันทึก storage URL ที่ตรวจสอบแล้ว ไม่ใช่ preview URL');
+assert.match(admin, /body: JSON\.stringify\(\{ \.\.\.draft, updated_at: M\.ui\.nowIso\(\) \}\)/, 'media editor ต้อง persist URL ลง stores table');
+assert.match(media, /prepareImage\(file/, 'Shared Media Service ต้องเตรียมและบีบอัดรูปก่อนอัปโหลด');
+assert.match(media, /DEFAULT_OUTPUT_MAX_BYTES = 1_000_000/, 'รูปที่จะอัปโหลดต้องถูกจำกัดไม่เกิน 1 MB');
+assert.match(media, /verifyRenderableUrl\(publicUrl\)/, 'รูป public ต้องถูกตรวจ URL ก่อนบันทึก');
 
 console.log('admin store detail media contract: PASS');

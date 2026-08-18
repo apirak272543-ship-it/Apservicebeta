@@ -2,22 +2,21 @@
 
 ## Scope
 
-Audit นี้ตรวจ Admin Application ที่ `Apservicebeta/admin/` ซึ่งมีเมนู Dashboard, Orders, Stores, Riders, Customers, Finance, Notifications, Promotions, AI Workspace, Settings และ legacy menu ที่แสดงในเมนู “เพิ่มเติม” บนโทรศัพท์
+Audit นี้ตรวจ Admin Application ที่ `Apservicebeta/admin/` ซึ่งมีเมนู Dashboard, Orders, Stores, Riders, Customers, Finance, Notifications, Promotions, Media Library, AI Workspace, Settings และเมนูเพิ่มเติมบนโทรศัพท์
 
 ## Confirmed defect: Legacy menu navigation
 
-เมนู legacy ใน Admin MPA เคยสร้าง URL `../admin.html?admin=<section>` แต่ `admin.html` เป็น compatibility page ที่ redirect ไป `./admin/` โดยไม่รักษา query string ส่งผลให้ฟังก์ชันเดิม เช่น Rider Applications, Settlements, Support, Inventory, Content, Admins, Error Center และ Mapping ไม่เปิด section ที่ผู้ใช้กด
+เมนูเดิมใน Admin MPA เคยพาผู้ใช้ไปยัง console เดิมหรือ compatibility route จึงเกิดการข้ามหน้าและทำให้บาง section เปิดไม่ตรงเมนูที่ผู้ใช้กด การส่งผู้ใช้ไปที่ console เดิมไม่สอดคล้องกับข้อกำหนดให้ Admin Application แยกตัวและทำงานภายใน application ของตนเอง
 
 ## Fix
 
-เมนู legacy ชี้ไป `legacy-admin-console.html?admin=<section>` โดยตรง ซึ่งโหลด `admin-legacy-deeplink.js` และเรียก `switchAdmin(section)` เมื่อ role Admin พร้อมใช้งาน นอกจากนี้ `admin.html?admin=<section>` จาก bookmark เก่าจะ preserve query และเปิด legacy console แทน เพื่อไม่ให้ผู้ใช้ถูก redirect ทิ้ง
+เมนูเพิ่มเติมทั้งหมดเปิด `operations.html?feature=<feature>` ภายใน Admin MPA แล้ว โดย route นี้อ่านข้อมูลจากตารางจริงของระบบกลาง ได้แก่ `rider_applications`, `settlements`, `support_messages`, `menu_items`, `user_roles` และ `error_reports` ฟังก์ชัน Content จะพาไปยังหน้า Promotions ภายใน Admin เดียวกัน ส่วน Mapping แสดงสัญญาการเชื่อมข้อมูลหลักระหว่าง Admin, Customer, Merchant, Rider และ Settlement โดยไม่มีลิงก์ navigation จาก Admin runtime ไป legacy console หรือ Customer repository
+
+ใบสมัครไรเดอร์และ error reports สามารถเปลี่ยนสถานะจาก Operations route ได้ โดยใช้ Supabase session ของ Admin และบันทึก audit fields ที่เกี่ยวข้อง ส่วนหน้าอื่นเปิดเป็นรายการข้อมูลจริงพร้อม empty state เพื่อให้ตรวจสอบข้อมูลได้ภายใน Admin Application
 
 ## Regression evidence
 
-* JavaScript syntax check ผ่าน
-* `admin_legacy_menu_deeplink_contract_test.cjs` ผ่าน
-* `admin_business_rules_control_plane_contract_test.cjs` ผ่าน
-* `admin_payment_slip_mpa_contract_test.cjs` ผ่าน
+JavaScript syntax check ผ่าน และ Admin contract suite ทั้งหมดผ่าน รวมถึง `admin_legacy_menu_deeplink_contract_test.cjs`, `admin_route_dispatch_contract_test.cjs`, `admin_native_features_contract_test.cjs`, `admin_payment_slip_mpa_contract_test.cjs`, `admin_withdrawal_workflow_contract_test.cjs`, `admin_image_hard_cap_contract_test.cjs`, `admin_mobile_layout_contract_test.cjs` และ `admin_performance_audit_contract_test.cjs` โดย contract ที่เคยอ้างไฟล์ monolith ได้ถูกย้ายให้ตรวจ Shared Media Service, Admin MPA routes, Supabase role gate และ responsive navigation ที่ใช้งานจริงหลังแยก repository
 
 ## Confirmed defect: AI Workspace fallback
 
@@ -31,8 +30,8 @@ Finance MPA เคยแสดง withdrawal requests เป็นตารา�
 
 ## Route and deployment audit
 
-ทุก MPA routes ที่เป็นเมนูหลักตอบ HTTP 200 จาก GitHub Pages และมี `data-page`, Shared MPA runtime และ Admin runtime ที่ตรงกัน ได้แก่ Dashboard, Orders, Stores, Riders, Customers, Finance, Notifications, Promotions, AI Workspace และ Settings. เพิ่ม `admin_route_dispatch_contract_test.cjs` เพื่อป้องกัน future regression ที่ route มีไฟล์ HTML แต่ไม่มี handler หรือไม่มี shared runtime.
+ทุก MPA routes ที่เป็นเมนูหลักตอบ HTTP 200 จาก GitHub Pages และมี `data-page`, Shared MPA runtime และ Admin runtime ที่ตรงกัน ได้แก่ Dashboard, Orders, Stores, Riders, Customers, Finance, Notifications, Promotions, Media Library, Operations, AI Workspace และ Settings. เพิ่ม `admin_route_dispatch_contract_test.cjs` เพื่อป้องกัน future regression ที่ route มีไฟล์ HTML แต่ไม่มี handler หรือไม่มี shared runtime.
 
 ## Remaining verification
 
-การกดและบันทึกข้อมูลจริงของแต่ละ menu ต้องทดสอบภายใต้ session Admin ที่มีสิทธิ์ RLS จริง เนื่องจาก login browser takeover ใช้งานไม่ได้ในรอบนี้ งาน audit จะตรวจ code/request/policy ของ MPA menu ต่อก่อนสรุปผล
+การกดและบันทึกข้อมูลจริงของแต่ละ menu ต้องทดสอบภายใต้ session Admin ที่มีสิทธิ์ RLS จริง โดยเฉพาะการเปลี่ยนสถานะใบสมัครไรเดอร์, error reports, GP รายร้าน, การอัปโหลดสื่อ และการอนุมัติ/บันทึกหลักฐานถอนเงิน การตรวจในรอบนี้ยืนยัน code path, request contract, route isolation และ regression tests แล้ว แต่ไม่ทดแทนการรับรอง end-to-end ด้วยบัญชีจริงบนโทรศัพท์

@@ -4,7 +4,7 @@ const assert = require('assert');
 
 const root = path.join(__dirname, '..', 'admin');
 const app = fs.readFileSync(path.join(root, 'admin-app.js'), 'utf8');
-const pages = ['dashboard', 'orders', 'stores', 'riders', 'customers', 'finance', 'notifications', 'promotions', 'media', 'ai-workspace', 'settings'];
+const pages = ['dashboard', 'orders', 'stores', 'riders', 'customers', 'finance', 'notifications', 'promotions', 'media', 'operations', 'ai-workspace', 'settings'];
 
 for (const page of pages) {
   const html = fs.readFileSync(path.join(root, `${page}.html`), 'utf8');
