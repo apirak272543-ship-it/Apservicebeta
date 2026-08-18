@@ -4,7 +4,7 @@ const assert = require('assert');
 
 const root = path.join(__dirname, '..', 'admin');
 const app = fs.readFileSync(path.join(root, 'admin-app.js'), 'utf8');
-const pages = ['dashboard', 'orders', 'stores', 'riders', 'customers', 'finance', 'notifications', 'promotions', 'ai-workspace', 'settings'];
+const pages = ['dashboard', 'orders', 'stores', 'riders', 'customers', 'finance', 'notifications', 'promotions', 'media', 'ai-workspace', 'settings'];
 
 for (const page of pages) {
   const html = fs.readFileSync(path.join(root, `${page}.html`), 'utf8');
@@ -15,6 +15,6 @@ for (const page of pages) {
 }
 
 assert.doesNotMatch(app, /href="\.\.\/admin\.html\?admin=/, 'legacy menu ต้องไม่ชี้ compatibility redirect ที่ทิ้ง deeplink');
-assert.match(app, /legacy-admin-console\.html\?admin=/, 'legacy menu ต้องชี้ legacy console โดยตรง');
+assert.doesNotMatch(app, /legacy-admin-console\.html/, 'Admin-native navigation ต้องไม่พาไป legacy console');
 
 console.log('admin route dispatch contract: PASS');
