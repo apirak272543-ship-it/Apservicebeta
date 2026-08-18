@@ -316,5 +316,7 @@
       document.querySelectorAll('[data-save]').forEach(button => button.onclick = async () => { const key = button.dataset.save, field = document.querySelector(`[data-value="${CSS.escape(key)}"]`); let value; try { value = JSON.parse(field.value); } catch { return M.ui.setNotice('ค่า configuration ต้องอยู่ในรูปแบบ JSON ที่ถูกต้อง', 'error'); } try { await M.request('platform_configs?on_conflict=key', { method: 'POST', private: true, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ key, value, updated_at: M.ui.nowIso() }) }); M.ui.setNotice('บันทึกการตั้งค่ากลางแล้ว'); } catch (err) { M.ui.setNotice(err.message, 'error'); } });
     } catch (err) { $('#settings').innerHTML = M.ui.error('โหลดการตั้งค่ากลางไม่สำเร็จ', err.message); }
   }
-  ({ login, dashboard, orders, stores: storesV3, promotions, media: mediaV2, operations: operationsV2, customers, riders, finance, notifications: notificationsV2, 'ai-workspace': aiWorkspace, settings }[page] || login)();
+  window.APServiceAdminRuntime = { M, C, $, h, icon, pageScope, app, gate, user: null };
+  const patchedRoute = window.APServiceAdminPatch?.[page];
+  (patchedRoute || ({ login, dashboard, orders, stores: storesV3, promotions, media: mediaV2, operations: operationsV2, customers, riders, finance, notifications: notificationsV2, 'ai-workspace': aiWorkspace, settings }[page] || login))();
 })();
