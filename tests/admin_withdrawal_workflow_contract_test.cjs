@@ -11,6 +11,9 @@ assert.match(admin, /data-withdrawal-reject/, 'คำขอ requested ต้อ�
 assert.match(admin, /data-withdrawal-pay/, 'คำขอ approved ต้องมีปุ่มบันทึกโอน');
 assert.match(admin, /uploadPrivateImage/, 'การปิดจ่ายต้องอัปโหลดหลักฐาน private');
 assert.match(admin, /data-withdrawal-proof/, 'หลักฐานการโอนต้องเปิดใน Admin App ได้');
+assert.match(admin, /data:image\\\/\(\?:jpeg\|png\|webp\);base64,/, 'หลักฐานแบบ data URL เดิมต้องเปิดใน Admin ได้โดยไม่พยายามสร้าง signed URL');
+assert.match(admin, /เชื่อมต่อระบบจัดเก็บหลักฐานไม่สำเร็จ/, 'ความล้มเหลวจาก network ต้องแสดงข้อความภาษาไทยที่เข้าใจง่าย');
+assert.match(admin, /data-proof-error/, 'รูปหลักฐานที่แสดงไม่ได้ต้องมีข้อความใน modal แทน error ดิบ');
 assert.match(media, /uploadPrivateImage/, 'Shared Media Service ต้องมี private upload helper');
 assert.match(migration, /admin_review_withdrawal/, 'backend ต้องมี review RPC');
 assert.match(migration, /Payment proof image is required/, 'server ต้องบังคับหลักฐานก่อนปิดจ่าย');
