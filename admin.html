@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0B8C7C">
   <title>AP Service | Admin</title>
-  <script>location.replace('./admin/');</script>
+  <script>
+    const legacyTarget = new URLSearchParams(location.search).get('admin');
+    location.replace(legacyTarget ? `./legacy-admin-console.html?admin=${encodeURIComponent(legacyTarget)}` : './admin/');
+  </script>
 </head>
 <body>
   <p>กำลังเปิดศูนย์ควบคุมผู้ดูแลระบบ… <a href="./admin/">เปิด Admin</a></p>
