@@ -29,6 +29,10 @@ Finance MPA เคยแสดง withdrawal requests เป็นตารา�
 
 การทดสอบเพิ่ม `admin_withdrawal_workflow_contract_test.cjs` และผ่านร่วมกับ legacy deeplink, business-rules, payment slip, pending badges และ MPA performance contracts.
 
+## Route and deployment audit
+
+ทุก MPA routes ที่เป็นเมนูหลักตอบ HTTP 200 จาก GitHub Pages และมี `data-page`, Shared MPA runtime และ Admin runtime ที่ตรงกัน ได้แก่ Dashboard, Orders, Stores, Riders, Customers, Finance, Notifications, Promotions, AI Workspace และ Settings. เพิ่ม `admin_route_dispatch_contract_test.cjs` เพื่อป้องกัน future regression ที่ route มีไฟล์ HTML แต่ไม่มี handler หรือไม่มี shared runtime.
+
 ## Remaining verification
 
 การกดและบันทึกข้อมูลจริงของแต่ละ menu ต้องทดสอบภายใต้ session Admin ที่มีสิทธิ์ RLS จริง เนื่องจาก login browser takeover ใช้งานไม่ได้ในรอบนี้ งาน audit จะตรวจ code/request/policy ของ MPA menu ต่อก่อนสรุปผล
