@@ -94,7 +94,12 @@
       if (meta) meta.classList.add('admin-store-compact-meta');
       const actions = card.querySelector('.admin-store-card-actions');
       if (actions) {
-        actions.innerHTML = `<button class="admin-store-manage-trigger" type="button" data-store-manage>จัดการร้าน ${esc(title)} <span aria-hidden="true">⋯</span></button>`;
+        const source = document.createElement('div');
+        source.className = 'admin-store-action-source';
+        source.hidden = true;
+        while (actions.firstChild) source.append(actions.firstChild);
+        actions.append(source);
+        actions.insertAdjacentHTML('beforeend', `<button class="admin-store-manage-trigger" type="button" data-store-manage>จัดการร้าน ${esc(title)} <span aria-hidden="true">⋯</span></button>`);
         actions.querySelector('[data-store-manage]').addEventListener('click', () => createSheet(card, storeId, title).showModal());
       }
     });

@@ -1,0 +1,117 @@
+(() => {
+  'use strict';
+  const page = document.body.dataset.page;
+  if (!['stores', 'finance'].includes(page)) return;
+
+  const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+  const runtime = () => window.APServiceAdminRuntime;
+  const notice = (message, state = 'success') => runtime()?.M?.ui?.setNotice(message, state);
+  const invoke = async payload => {
+    const R = runtime();
+    const session = await R?.M?.auth?.refreshSession(false);
+    if (!session?.access_token) throw new Error('เซสชัน Admin หมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    const response = await fetch(`${R.M.config.url}/functions/v1/role-access`, { method: 'POST', headers: { apikey: R.M.config.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.error || 'ดำเนินการไม่สำเร็จ');
+    return result;
+  };
+  const close = modal => modal.remove();
+  const modal = (title, description, content, submitLabel, onSubmit) => {
+    const node = document.createElement('div');
+    node.className = 'mpa-modal-backdrop';
+    node.innerHTML = `<section class="mpa-card mpa-modal admin-store-modal" role="dialog" aria-modal="true"><div class="mpa-page-head"><div><h2 style="margin:0">${esc(title)}</h2><p class="mpa-muted">${esc(description)}</p></div><button type="button" class="mpa-button mpa-button-secondary" data-close>ปิด</button></div><form data-form>${content}<div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="submit" class="mpa-button">${esc(submitLabel)}</button></div></form></section>`;
+    document.body.append(node);
+    node.querySelectorAll('[data-close]').forEach(button => button.onclick = () => close(node));
+    node.querySelector('[data-form]').onsubmit = async event => {
+      event.preventDefault(); const form = event.currentTarget; const submit = form.querySelector('[type="submit"]');
+      try { submit.disabled = true; await onSubmit(form, node); close(node); notice('บันทึกเฉพาะข้อมูลในหมวดที่เลือกแล้ว'); location.reload(); }
+      catch (error) { submit.disabled = false; notice(error.message || 'บันทึกข้อมูลไม่สำเร็จ', 'error'); }
+    };
+    return node;
+  };
+  const storeSelect = 'id,name,phone,category_id,location,legal_name,registration_number,contact_name,contact_email,registered_address,pickup_address,delivery_address,registration_document_url';
+  const loadStore = async id => {
+    const rows = await runtime().M.request(`stores?select=${storeSelect}&id=eq.${encodeURIComponent(id)}&limit=1`, { private: true });
+    if (!rows?.[0]) throw new Error('ไม่พบข้อมูลร้านค้า');
+    return rows[0];
+  };
+  const field = (name, label, value = '', type = 'text', extra = '') => type === 'textarea'
+    ? `<label class="mpa-field admin-form-full">${label}<textarea name="${name}" rows="3" ${extra}>${esc(value)}</textarea></label>`
+    : `<label class="mpa-field">${label}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
+  const saveStoreSection = async (id, section, data) => invoke({ action: 'update_store_section', entity_id: id, section, data });
+  const openStoreIdentity = async id => {
+    const row = await loadStore(id);
+    modal(`ข้อมูลนิติบุคคลและติดต่อ: ${row.name}`, 'แก้เฉพาะชื่อจดทะเบียน เลขทะเบียน ผู้ติดต่อ อีเมล เบอร์โทร และประเภทร้าน', `<div class="admin-form-grid">${field('legal_name', 'ชื่อจดทะเบียน / ชื่อธุรกิจ', row.legal_name)}${field('registration_number', 'เลขทะเบียน / เลขประจำตัวผู้เสียภาษี', row.registration_number)}${field('contact_name', 'ชื่อผู้ติดต่อหลัก', row.contact_name)}${field('contact_email', 'อีเมลติดต่อร้าน', row.contact_email, 'email')}${field('phone', 'เบอร์โทรศัพท์ร้าน', row.phone, 'tel')}${field('category_id', 'ประเภทร้านสำหรับหน้าลูกค้า', row.category_id)}</div>`, 'บันทึกข้อมูลร้าน', async form => {
+      const data = {}; ['legal_name', 'registration_number', 'contact_name', 'contact_email', 'phone', 'category_id'].forEach(key => { const value = form.elements[key].value.trim(); if (String(value) !== String(row[key] || '')) data[key] = value; });
+      if (!Object.keys(data).length) throw new Error('ยังไม่มีข้อมูลในหมวดนี้ที่เปลี่ยน');
+      await saveStoreSection(id, 'identity', data);
+    });
+  };
+  const openStoreAddresses = async id => {
+    const row = await loadStore(id); const location = row.location || {};
+    modal(`ที่อยู่และพิกัด: ${row.name}`, 'แยกที่อยู่จดทะเบียน จุดรับสินค้า และที่อยู่รับเอกสาร เพื่อไม่เขียนทับพิกัดปฏิบัติการ', `<div class="admin-form-grid">${field('registered_address', 'ที่อยู่จดทะเบียน', row.registered_address, 'textarea')}${field('pickup_address', 'ที่อยู่จุดรับสินค้า / สาขาปฏิบัติการ', row.pickup_address, 'textarea')}${field('delivery_address', 'ที่อยู่รับเอกสาร / ที่อยู่จัดส่ง', row.delivery_address, 'textarea')}${field('location_lat', 'ละติจูดหมุดร้าน', location.lat ?? '', 'number', 'step="any"')}${field('location_lng', 'ลองจิจูดหมุดร้าน', location.lng ?? '', 'number', 'step="any"')}</div>`, 'บันทึกที่อยู่และพิกัด', async form => {
+      const data = {}; ['registered_address', 'pickup_address', 'delivery_address'].forEach(key => { const value = form.elements[key].value.trim(); if (value !== String(row[key] || '')) data[key] = value; });
+      const lat = Number(form.elements.location_lat.value), lng = Number(form.elements.location_lng.value);
+      if (form.elements.location_lat.value || form.elements.location_lng.value) {
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) throw new Error('พิกัดร้านไม่ถูกต้อง');
+        const nextLocation = { ...location, lat, lng, source: 'admin', capturedAt: new Date().toISOString() };
+        if (JSON.stringify(nextLocation) !== JSON.stringify(location)) data.location = nextLocation;
+      }
+      if (!Object.keys(data).length) throw new Error('ยังไม่มีข้อมูลในหมวดนี้ที่เปลี่ยน');
+      await saveStoreSection(id, 'addresses', data);
+    });
+  };
+  const openStoreDocument = async id => {
+    const row = await loadStore(id);
+    modal(`เอกสารร้าน: ${row.name}`, 'อัปโหลดรูปเอกสารจดทะเบียนผ่าน Shared Media Service แบบส่วนตัว จำกัดผลลัพธ์ไม่เกิน 1 MB', `<div class="admin-form-grid">${field('registration_number', 'เลขทะเบียน / เลขประจำตัวผู้เสียภาษี', row.registration_number)}<label class="mpa-field admin-form-full">ภาพเอกสารจดทะเบียน<input name="registration_document" type="file" accept="image/jpeg,image/png,image/webp"></label><p class="mpa-muted admin-form-full">${row.registration_document_url ? 'มีเอกสารเดิมเก็บในพื้นที่ส่วนตัวแล้ว สามารถเลือกไฟล์ใหม่เพื่อแทนที่ได้' : 'ยังไม่มีเอกสารที่อัปโหลด'}</p></div>`, 'บันทึกเอกสารร้าน', async form => {
+      const data = {}; const registrationNumber = form.elements.registration_number.value.trim(); if (registrationNumber !== String(row.registration_number || '')) data.registration_number = registrationNumber;
+      const file = form.elements.registration_document.files?.[0];
+      if (file) { const R = runtime(); const session = await R.M.auth.refreshSession(false); if (!session?.access_token || !session?.user?.id) throw new Error('เซสชัน Admin หมดอายุ'); const uploaded = await window.APServiceMedia.uploadPrivateImage(file, { url: R.M.config.url, publishableKey: R.M.config.publishableKey, accessToken: session.access_token, actorId: session.user.id, bucket: 'store-documents', scope: `store-${id}-registration`, mediaType: 'IDENTITY_DOCUMENT', ownerType: 'store' }); data.registration_document_url = uploaded.storageRef; }
+      if (!Object.keys(data).length) throw new Error('กรุณาแก้เลขทะเบียนหรือเลือกเอกสารก่อนบันทึก');
+      if (Object.prototype.hasOwnProperty.call(data, 'registration_number')) await saveStoreSection(id, 'identity', { registration_number: data.registration_number });
+      if (data.registration_document_url) await saveStoreSection(id, 'documents', { registration_document_url: data.registration_document_url });
+    });
+  };
+  const openFullStoreCreate = () => modal('เพิ่มร้านค้าและบัญชี Merchant', 'เก็บข้อมูลเป็นหมวดเพื่อให้ Admin แก้ไขภายหลังได้โดยไม่เขียนทับข้อมูลธุรกิจส่วนอื่น', `<div class="admin-form-grid">${field('name', 'ชื่อร้านสำหรับแสดงลูกค้า', '', 'text', 'required')}${field('legal_name', 'ชื่อจดทะเบียน / ชื่อธุรกิจ')}${field('registration_number', 'เลขทะเบียน / เลขประจำตัวผู้เสียภาษี')}${field('category_id', 'ประเภทร้านสำหรับหน้าลูกค้า')}${field('phone', 'เบอร์โทรศัพท์ร้าน', '', 'tel', 'required')}${field('contact_name', 'ชื่อผู้ติดต่อหลัก')}${field('contact_email', 'อีเมลติดต่อร้าน', '', 'email')}${field('registered_address', 'ที่อยู่จดทะเบียน', '', 'textarea')}${field('pickup_address', 'ที่อยู่จุดรับสินค้า / สาขาปฏิบัติการ', '', 'textarea')}${field('delivery_address', 'ที่อยู่รับเอกสาร / ที่อยู่จัดส่ง', '', 'textarea')}${field('display_name', 'ชื่อเจ้าของร้าน / Merchant', '', 'text', 'required')}${field('email', 'อีเมลสำหรับเข้าสู่ระบบ Merchant', '', 'email', 'required')}${field('login_id', 'Login ID Merchant', '', 'text', 'required pattern="[A-Za-z0-9._-]{3,32}"')}${field('password', 'รหัสผ่านเริ่มต้น', '', 'password', 'required minlength="8"')}${field('location_lat', 'ละติจูดหมุดร้าน', '', 'number', 'step="any"')}${field('location_lng', 'ลองจิจูดหมุดร้าน', '', 'number', 'step="any"')}</div>`, 'สร้างร้านและบัญชี', async form => {
+    const id = `store-${typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`; const latRaw = form.elements.location_lat.value, lngRaw = form.elements.location_lng.value; let location = null;
+    if (latRaw || lngRaw) { const lat = Number(latRaw), lng = Number(lngRaw); if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) throw new Error('พิกัดร้านไม่ถูกต้อง'); location = { lat, lng, source: 'admin', capturedAt: new Date().toISOString() }; }
+    const values = key => form.elements[key].value.trim();
+    await invoke({ action: 'provision', role: 'store_owner', entity_id: id, email: values('email'), login_id: values('login_id'), display_name: values('display_name'), password: form.elements.password.value, phone: values('phone'), entity: { id, name: values('name'), phone: values('phone'), active: true, legal_name: values('legal_name'), registration_number: values('registration_number'), contact_name: values('contact_name'), contact_email: values('contact_email'), registered_address: values('registered_address'), pickup_address: values('pickup_address'), delivery_address: values('delivery_address'), category_id: values('category_id'), location } });
+  });
+  const enhanceStores = () => {
+    const host = document.getElementById('stores'); if (!host) return;
+    const create = document.getElementById('createStore');
+    if (create && !create.dataset.fullCreateReady) { create.dataset.fullCreateReady = 'true'; create.addEventListener('click', event => { event.preventDefault(); event.stopImmediatePropagation(); openFullStoreCreate(); }, true); }
+    host.querySelectorAll('.admin-store-card').forEach(card => {
+      if (card.dataset.completenessReady) return;
+      const id = card.querySelector('[data-store-general]')?.dataset.storeGeneral; const actions = card.querySelector('.admin-store-card-actions');
+      if (!id || !actions) return;
+      card.dataset.completenessReady = 'true';
+      [['identity', 'ข้อมูลธุรกิจ/ติดต่อ'], ['addresses', 'ที่อยู่/พิกัด'], ['documents', 'เอกสารร้าน']].forEach(([kind, label]) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'mpa-button mpa-button-secondary'; button.dataset.storeComplete = `${kind}:${id}`; button.textContent = label; actions.insertBefore(button, actions.firstChild); });
+      actions.querySelectorAll('[data-store-complete]').forEach(button => button.onclick = () => { const [kind, storeId] = button.dataset.storeComplete.split(':'); ({ identity: openStoreIdentity, addresses: openStoreAddresses, documents: openStoreDocument }[kind])(storeId).catch(error => notice(error.message || 'เปิดข้อมูลร้านไม่สำเร็จ', 'error')); });
+    });
+  };
+  const payoutRows = host => [...host.querySelectorAll('[data-withdrawal-approve],[data-withdrawal-pay],[data-withdrawal-reject],[data-withdrawal-proof]')].map(button => ({ id: button.dataset.withdrawalApprove || button.dataset.withdrawalPay || button.dataset.withdrawalReject || button.dataset.withdrawalProof, actionBox: button.parentElement })).filter(row => row.id);
+  const money = value => runtime()?.M?.ui?.baht(value || 0) || `${value || 0} บาท`;
+  const openWithdrawalDetail = async (id, continueButton) => {
+    const detail = await invoke({ action: 'get_withdrawal_review_detail', request_id: id }); const w = detail.withdrawal || {}; const r = detail.recipient || {}; const payout = w.payout_snapshot && typeof w.payout_snapshot === 'object' ? w.payout_snapshot : {};
+    const rows = [['ผู้รับเงิน', r.name || w.recipient_name || '-'], ['โทรศัพท์', r.phone || '-'], ['อีเมล', r.email || '-'], ['ที่อยู่', r.address || '-'], ['ประเภทรายการ', w.recipient_type || '-'], ['ยอดที่ขอถอน', money(w.amount)], ['ชื่อบัญชี/ผู้รับ', payout.account_name || payout.accountName || payout.recipient_name || '-'], ['ธนาคาร/ช่องทาง', payout.bank_name || payout.bank || payout.channel || '-'], ['เลขบัญชี/พร้อมเพย์', payout.account_number || payout.accountNumber || payout.promptpay || '-'], ['QR ที่ลงทะเบียน', payout.qr_url || payout.qrUrl || '-'], ['หมายเหตุผู้ขอ', w.recipient_note || '-']];
+    const node = document.createElement('div'); node.className = 'mpa-modal-backdrop'; node.innerHTML = `<section class="mpa-card mpa-modal admin-store-modal" role="dialog" aria-modal="true"><div class="mpa-page-head"><div><h2 style="margin:0">ตรวจผู้รับและช่องทางรับเงิน</h2><p class="mpa-muted">ตรวจข้อมูล snapshot ณ เวลาส่งคำขอ ก่อนอนุมัติหรือบันทึกการโอน</p></div><button type="button" class="mpa-button mpa-button-secondary" data-close>ปิด</button></div><dl class="admin-withdrawal-review-grid">${rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>${payout.qr_url || payout.qrUrl ? `<img src="${esc(payout.qr_url || payout.qrUrl)}" alt="QR ผู้รับเงิน" class="admin-withdrawal-qr">` : ''}<div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>กลับ</button>${continueButton ? '<button type="button" class="mpa-button" data-continue>ยืนยันข้อมูลแล้ว ดำเนินการต่อ</button>' : ''}</div></section>`; document.body.append(node); node.querySelectorAll('[data-close]').forEach(button => button.onclick = () => close(node)); node.querySelector('[data-continue]')?.addEventListener('click', () => { close(node); continueButton.dataset.withdrawalReviewAccepted = 'true'; continueButton.click(); });
+  };
+  const enhanceFinance = () => {
+    const host = document.getElementById('finance'); if (!host) return;
+    payoutRows(host).forEach(({ id, actionBox }) => {
+      if (actionBox.querySelector(`[data-withdrawal-detail="${CSS.escape(id)}"]`)) return;
+      const detail = document.createElement('button'); detail.type = 'button'; detail.className = 'mpa-button mpa-button-secondary'; detail.dataset.withdrawalDetail = id; detail.textContent = 'ตรวจผู้รับ'; actionBox.prepend(detail);
+      detail.onclick = () => openWithdrawalDetail(id).catch(error => notice(error.message || 'โหลดข้อมูลผู้รับเงินไม่สำเร็จ', 'error'));
+    });
+    host.querySelectorAll('[data-withdrawal-approve],[data-withdrawal-pay],[data-withdrawal-reject]').forEach(button => {
+      if (button.dataset.withdrawalReviewGuardReady) return;
+      button.dataset.withdrawalReviewGuardReady = 'true'; button.addEventListener('click', event => { if (button.dataset.withdrawalReviewAccepted === 'true') { delete button.dataset.withdrawalReviewAccepted; return; } event.preventDefault(); event.stopImmediatePropagation(); const id = button.dataset.withdrawalApprove || button.dataset.withdrawalPay || button.dataset.withdrawalReject; openWithdrawalDetail(id, button).catch(error => notice(error.message || 'โหลดข้อมูลผู้รับเงินไม่สำเร็จ', 'error')); }, true);
+    });
+  };
+  const observer = new MutationObserver(() => requestAnimationFrame(() => { enhanceStores(); enhanceFinance(); }));
+  observer.observe(document.body, { childList: true, subtree: true });
+  enhanceStores(); enhanceFinance();
+  addEventListener('pagehide', () => observer.disconnect(), { once: true });
+})();

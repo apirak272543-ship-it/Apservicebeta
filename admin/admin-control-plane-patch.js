@@ -305,7 +305,7 @@
     }).catch(error => notice(error.message, 'error'));
   }
 
-  window.APServiceAdminPatch = { dashboard: dashboardPatch, orders: ordersPatch, promotions: mediaCenterPatch, media: mediaCenterPatch, accounts: accountsPatch };
+  window.APServiceAdminPatch = { dashboard: dashboardPatch, orders: ordersPatch, promotions: mediaCenterPatch, media: mediaCenterPatch };
 })();
 
 /* The patch is intentionally loaded before admin-app.js. The base app exposes its

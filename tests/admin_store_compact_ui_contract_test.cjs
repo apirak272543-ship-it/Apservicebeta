@@ -9,6 +9,8 @@ assert.match(page, /admin-store-compact-ui\.css/, 'หน้าร้าน Admi
 assert.match(page, /admin-store-compact-ui\.js/, 'หน้าร้าน Admin ต้องโหลด action sheet enhancement');
 assert.match(script, /store_categories\?select=id,name,icon/, 'ตัวกรองต้องใช้หมวดประเภทร้านจาก backend กลาง');
 assert.match(script, /data-store-manage/, 'การ์ดร้านต้องเปิด action sheet แทนแสดงทุกปุ่มพร้อมกัน');
+assert.match(script, /admin-store-action-source/, 'action sheet ต้องเก็บปุ่มจัดการร้านต้นทางไว้ ไม่ลบ action ที่จำเป็น');
+assert.match(script, /while \(actions\.firstChild\) source\.append\(actions\.firstChild\)/, 'ต้องย้ายปุ่มเดิมพร้อม event handler เข้า source ก่อนสร้างปุ่มจัดการ');
 assert.match(script, /action: 'update_store_section'.*category_id/s, 'การเปลี่ยนประเภทร้านต้องผ่าน role-access server action');
 assert.match(script, /showModal\(\)/, 'action sheet ต้องเป็นป๊อปอัปบนบริบทของร้านที่เลือก');
 assert.match(styles, /overflow-y:auto/, 'action sheet ต้องเลื่อนแนวตั้งบนมือถือได้');
