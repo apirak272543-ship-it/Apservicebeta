@@ -1,0 +1,89 @@
+/* Admin role theme — additive soft-art control-center skin. */
+:root {
+  --ap-brand: #d94a5d;
+  --ap-brand-deep: #8d2436;
+  --ap-brand-soft: #fff0f3;
+  --ap-ink: #34222b;
+  --ap-muted: #78656c;
+  --ap-line: #f0dce1;
+  --ap-paper: #ffffff;
+  --ap-canvas: #fff8f9;
+  --ap-radius: 22px;
+  --ap-shadow: 0 18px 42px rgba(168, 44, 67, .12);
+}
+
+body {
+  background:
+    radial-gradient(circle at 1% 0%, rgba(255, 181, 190, .32), transparent 28rem),
+    radial-gradient(circle at 100% 22%, rgba(255, 222, 170, .25), transparent 29rem),
+    var(--ap-canvas);
+}
+.admin-topbar {
+  min-height: 76px;
+  background: rgba(255, 255, 255, .90);
+  border-color: #f0d8df;
+  box-shadow: 0 10px 26px rgba(132, 35, 55, .08);
+}
+.admin-brand-mark {
+  background: linear-gradient(145deg, #f17a87, #d94a5d 58%, #aa2841);
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow: 0 9px 19px rgba(217, 74, 93, .25);
+}
+.admin-brand b { color: #792439; }
+.admin-brand small { color: #9e6672; }
+.admin-nav-link,.admin-account-link,.admin-nav-more summary {
+  border-radius: 15px;
+  transition: transform var(--soft-ease), background var(--soft-ease), box-shadow var(--soft-ease), color var(--soft-ease);
+}
+.admin-nav-link:hover,.admin-account-link:hover,.admin-nav-more summary:hover { transform: translateY(-2px); background: #fff1f4; color: #a92f46; }
+.admin-nav-link.active { background: linear-gradient(135deg, #ffe9ee, #fff8f9); color: #ab2c43; box-shadow: inset 0 0 0 1px #f5cad3; }
+.admin-nav-badge { background: #d94a5d; box-shadow: 0 3px 8px rgba(217, 74, 93, .24); }
+.admin-nav-popover { border: 1px solid #f0d8df; border-radius: 18px; box-shadow: 0 20px 40px rgba(104, 34, 49, .16); overflow: hidden; }
+.admin-nav-group p { color: #ab2c43; }
+.admin-nav-popover-link:hover,.admin-nav-legacy:hover { background: #fff1f4; color: #a92f46; }
+.mpa-page-head { border-bottom-color: #f0dce1; }
+.mpa-page-head h1,.mpa-page-head h2,.admin-section-heading h2 { color: #752239; }
+.admin-page-eyebrow,.admin-section-kicker { color: #c63e54; }
+.admin-dashboard-section,.admin-dashboard-attention { border-color: #f0dce1; border-radius: 24px; background: rgba(255,255,255,.79); box-shadow: 0 12px 28px rgba(143, 38, 58, .06); }
+.admin-section-heading { border-bottom-color: #f2dfe4; }
+.admin-finance-grid { gap: 16px; }
+.admin-finance-card {
+  min-height: 155px;
+  border: 1px solid #f1d9df;
+  border-radius: 21px;
+  background: linear-gradient(145deg, #fff, #fff6f7);
+  box-shadow: 0 10px 23px rgba(149, 47, 66, .07);
+  overflow: hidden;
+  position: relative;
+}
+.admin-finance-card:after { content: ""; position: absolute; width: 74px; height: 74px; right: -21px; top: -28px; border: 14px solid rgba(217,74,93,.09); border-radius: 55% 45% 58% 42%; transform: rotate(-18deg); }
+.admin-finance-card:nth-child(2) { background: linear-gradient(145deg, #fffdf8, #fff4df); border-color: #f6dfad; }
+.admin-finance-card:nth-child(2):after { border-color: rgba(227, 146, 30, .12); }
+.admin-finance-card:nth-child(3) { background: linear-gradient(145deg, #fcf9ff, #f1eafe); border-color: #e2d4f8; }
+.admin-finance-card:nth-child(3):after { border-color: rgba(128, 82, 210, .12); }
+.admin-finance-card:hover { transform: translateY(-3px); box-shadow: 0 16px 30px rgba(149, 47, 66, .12); }
+.admin-finance-card small { color: #9a5464; }
+.admin-finance-card strong { color: #7a2239; }
+.admin-finance-card-empty { background: #fffdfd; }
+.admin-quick-action { border: 1px solid #f0dce1; border-radius: 17px; background: #fff; transition: transform var(--soft-ease), border-color var(--soft-ease), background var(--soft-ease); }
+.admin-quick-action:hover { transform: translateY(-2px); border-color: #ebaab6; background: #fff5f6; }
+.admin-dashboard-shortcuts summary { color: #a92f46; }
+.mpa-card { border-color: #f0dce1; }
+.mpa-card:not(.admin-finance-card):not(.admin-dashboard-attention) { box-shadow: 0 10px 24px rgba(135, 34, 53, .055); }
+.admin-status-tabs,.admin-account-tabs,.admin-store-filters { scrollbar-color: #e798a7 transparent; }
+.admin-status-tab,.admin-account-tab,.admin-store-filter { border-radius: 999px; border-color: #f0d8df; background: #fff; }
+.admin-status-tab.active,.admin-account-tab.active,.admin-store-filter.active { background: #fff0f3; border-color: #efb6c1; color: #a92f46; }
+.admin-orders-workspace,.admin-media-column,.admin-form-section { border-color: #f0dce1; border-radius: 20px; background: #fff; }
+.admin-media-column h3,.admin-form-section h3 { color: #7a2239; }
+.mpa-field input,.mpa-field select,.mpa-field textarea { border-color: #ead4da; background: #fffdfd; }
+.mpa-field input:focus,.mpa-field select:focus,.mpa-field textarea:focus { border-color: #d94a5d; outline: 3px solid rgba(217,74,93,.13); }
+.mpa-modal-backdrop { background: rgba(70, 21, 33, .34); backdrop-filter: blur(4px); }
+.mpa-modal { border-color: #f1d8de; box-shadow: 0 28px 62px rgba(75, 19, 34, .24); }
+@media (max-width: 860px) {
+  .admin-topbar { min-height: 65px; }
+  .admin-dashboard-section,.admin-dashboard-attention { border-radius: 19px; }
+  .admin-finance-card { min-height: 137px; border-radius: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav-link,.admin-account-link,.admin-nav-more summary,.admin-finance-card,.admin-quick-action,.mpa-button { transition: none; }
+}
