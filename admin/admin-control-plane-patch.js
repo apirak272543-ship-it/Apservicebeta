@@ -11,10 +11,12 @@
   const runtime = () => window.APServiceAdminRuntime;
   const notice = (message, type) => M.ui.setNotice(message, type);
 
-  const activeStatuses = new Set(['รอดำเนินการ', 'กำลังเตรียม', 'กำลังจัดส่ง', 'รอชำระเงิน', 'รอตรวจสอบ', 'pending', 'processing', 'preparing', 'out_for_delivery']);
-  const historyStatuses = new Set(['สำเร็จแล้ว', 'เสร็จสิ้น', 'ยกเลิก', 'ถูกยกเลิก', 'ระงับแล้ว', 'ถูกระงับ', 'completed', 'cancelled', 'canceled', 'suspended']);
+  const legacyNewStatuses = new Set(['รอดำเนินการ', 'รอชำระเงิน', 'รอตรวจสอบ', 'pending']);
+  const legacyHistoryStatuses = new Set(['สำเร็จแล้ว', 'เสร็จสิ้น', 'ยกเลิก', 'ถูกยกเลิก', 'ระงับแล้ว', 'ถูกระงับ', 'completed', 'cancelled', 'canceled', 'suspended']);
   const statusLabel = status => ({ completed: 'เสร็จสิ้น', cancelled: 'ยกเลิก', canceled: 'ยกเลิก', suspended: 'ระงับแล้ว' }[String(status || '').toLowerCase()] || String(status || 'ไม่ระบุ'));
-  const isHistory = status => { const value = String(status || '').trim().toLowerCase(); return historyStatuses.has(String(status || '').trim()) || historyStatuses.has(value) || value.includes('completed') || value.includes('cancel') || value.includes('suspend') || value.includes('สำเร็จ') || value.includes('ยกเลิก') || value.includes('ระงับ'); };
+  const canonicalStatuses = () => runtime()?.C?.contracts?.orderStatus || window.APServiceCore?.contracts?.orderStatus || {};
+  const isHistory = status => { const value = String(status || '').trim().toLowerCase(); const C = canonicalStatuses(); return status === C.COMPLETED || status === C.CANCELLED || legacyHistoryStatuses.has(String(status || '').trim()) || legacyHistoryStatuses.has(value) || value.includes('completed') || value.includes('cancel') || value.includes('suspend') || value.includes('สำเร็จ') || value.includes('ยกเลิก') || value.includes('ระงับ'); };
+  const orderBucket = status => { const C = canonicalStatuses(); if (isHistory(status)) return 'history'; if ([C.PAYMENT_REVIEW, C.PAYMENT_RETRY, C.CREDIT_REVIEW].includes(status) || legacyNewStatuses.has(String(status || '').trim())) return 'new'; return 'active'; };
 
   async function audit(action, targetUserId, reason, beforeState, afterState) {
     const user = runtime()?.user;
@@ -135,21 +137,47 @@
     };
   }
 
+  function orderStatusEditor(order, onSaved) {
+    const R = runtime();
+    const C = R?.C;
+    if (!C?.order?.canTransition || !C?.contracts?.orderStatus) return notice('Shared Core สำหรับเปลี่ยนสถานะยังโหลดไม่พร้อม กรุณารีเฟรชหน้าแล้วลองใหม่', 'error');
+    const candidates = Object.values(C.contracts.orderStatus).filter(status => C.order.canTransition({ from: order.status, to: status, actor: 'admin' }).ok);
+    if (!candidates.length) return notice('ออเดอร์นี้อยู่ในสถานะปลายทางแล้ว หรือไม่มีสถานะถัดไปที่อนุญาต', 'error');
+    const body = `<p class="mpa-muted">ระบบจะแสดงเฉพาะสถานะถัดไปที่ Shared Core อนุญาต จึงไม่สร้าง transition ใหม่หรือข้ามขั้นตอน</p><label class="mpa-field"><span>สถานะปัจจุบัน</span><input value="${esc(statusLabel(order.status))}" disabled></label><label class="mpa-field"><span>เปลี่ยนเป็น</span><select id="nextOrderStatus"><option value="">เลือกสถานะ…</option>${candidates.map(status => `<option value="${esc(status)}">${esc(statusLabel(status))}</option>`).join('')}</select></label><label class="mpa-field"><span>เหตุผลหรือหมายเหตุ</span><textarea id="orderStatusReason" rows="2" placeholder="เช่น ตรวจสอบสลิปเรียบร้อยแล้ว"></textarea></label><div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveOrderStatus">บันทึกสถานะ</button></div>`;
+    const dialog = modal(`เปลี่ยนสถานะ · ${order.id}`, body, 'เปลี่ยนสถานะออเดอร์');
+    dialog.backdrop.querySelector('#saveOrderStatus').onclick = async () => {
+      const nextStatus = dialog.backdrop.querySelector('#nextOrderStatus')?.value;
+      if (!nextStatus) return notice('กรุณาเลือกสถานะถัดไป', 'error');
+      const check = C.order.canTransition({ from: order.status, to: nextStatus, actor: 'admin' });
+      if (!check.ok) return notice(check.reason, 'error');
+      const reason = dialog.backdrop.querySelector('#orderStatusReason')?.value.trim() || 'เปลี่ยนสถานะโดย Admin';
+      const save = dialog.backdrop.querySelector('#saveOrderStatus'); save.disabled = true;
+      try {
+        await request(`delivery_orders?id=eq.${encodeURIComponent(order.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: nextStatus, updated_at: iso() }) });
+        await audit('order_status_updated', null, reason, { order_id: order.id, status: order.status }, { order_id: order.id, status: nextStatus });
+        notice('บันทึกสถานะออเดอร์แล้ว'); dialog.close(); onSaved();
+      } catch (error) { save.disabled = false; notice(`บันทึกสถานะไม่สำเร็จ: ${error.message}`, 'error'); }
+    };
+  }
+
   function ordersPatch() {
     const R = runtime();
     if (!R) return;
-    const content = `<div class="mpa-page-head"><div><h1>จัดการออเดอร์</h1><p>งานปัจจุบันจะแสดงเฉพาะออเดอร์ที่ยังดำเนินการ ออเดอร์เสร็จสิ้น ยกเลิก หรือระงับจะอยู่ในประวัติ</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="mpa-button mpa-button-secondary" id="showHistory">ดูประวัติออเดอร์</button><button class="mpa-button mpa-button-secondary" id="refreshOrders">รีเฟรช</button></div></div><section class="mpa-card"><div class="admin-filter-row"><button class="mpa-button" data-order-tab="active">ออเดอร์ปัจจุบัน</button><button class="mpa-button mpa-button-secondary" data-order-tab="history">ประวัติออเดอร์</button><input class="mpa-field" style="margin:0;min-width:220px" id="orderSearch" placeholder="ค้นหาเลขออเดอร์ ลูกค้า ร้านค้า"></div><div id="orders">${M.ui.loading('กำลังโหลดออเดอร์…')}</div></section>`;
+    const content = `<div class="mpa-page-head"><div><p class="admin-page-eyebrow">ORDER CONTROL</p><h1>จัดการออเดอร์</h1><p>แยกคิวออเดอร์ใหม่ งานที่กำลังดำเนินการ และประวัติออกจากกัน โดยเปลี่ยนสถานะผ่าน Shared Core เท่านั้น</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="mpa-button mpa-button-secondary" id="showHistory">ดูประวัติออเดอร์</button><button class="mpa-button mpa-button-secondary" id="refreshOrders">รีเฟรช</button></div></div><section class="mpa-card admin-orders-workspace"><div class="admin-filter-row admin-orders-tabs" role="tablist" aria-label="กลุ่มออเดอร์"><button class="mpa-button" data-order-tab="new" role="tab" aria-selected="true">ออเดอร์ใหม่ <span data-order-count="new">0</span></button><button class="mpa-button mpa-button-secondary" data-order-tab="active" role="tab" aria-selected="false">กำลังดำเนินการ <span data-order-count="active">0</span></button><button class="mpa-button mpa-button-secondary" data-order-tab="history" role="tab" aria-selected="false">ประวัติ <span data-order-count="history">0</span></button><label class="mpa-field admin-order-search"><span class="sr-only">ค้นหาออเดอร์</span><input id="orderSearch" placeholder="ค้นหาเลขออเดอร์ ลูกค้า ร้านค้า หรือ Rider"></label></div><div id="orders">${M.ui.loading('กำลังโหลดออเดอร์…')}</div></section>`;
     R.gate('orders', content).then(async access => {
       if (!access) return;
       R.user = access.user;
-      const host = document.querySelector('#orders'); let rows = []; let tab = 'active'; let search = '';
+      const host = document.querySelector('#orders'); let rows = []; let tab = 'new'; let search = '';
       const load = async () => { host.innerHTML = M.ui.loading('กำลังโหลดข้อมูลออเดอร์…'); rows = await request('delivery_orders?select=id,customer_id,customer_name,store_id,store_name,rider_id,rider_name,ride_selected_rider_id,status,total,payable,delivery_fee,credit_used,ordered_at,updated_at&order=ordered_at.desc&limit=500'); render(); };
       const render = () => {
-        const filtered = (rows || []).filter(row => (tab === 'history' ? isHistory(row.status) : !isHistory(row.status)) && (!search || [row.id, row.customer_name, row.store_name, row.rider_name].some(value => String(value || '').toLowerCase().includes(search.toLowerCase()))));
-        host.innerHTML = filtered.length ? `<div class="mpa-table-wrap"><table class="mpa-table"><thead><tr><th>ออเดอร์</th><th>ลูกค้า/ร้าน</th><th>ยอดชำระ</th><th>สถานะ</th><th>Rider</th><th>เวลา</th><th>จัดการ</th></tr></thead><tbody>${filtered.map(row => `<tr><td><b>${esc(row.id)}</b></td><td>${esc(row.customer_name || '-')}<br><span class="mpa-muted">${esc(row.store_name || '-')}</span></td><td><b>${money(row.payable ?? row.total)}</b><br><span class="mpa-muted">รวม ${money(row.total)}</span></td><td><span class="mpa-badge">${esc(statusLabel(row.status))}</span></td><td>${row.rider_name ? `🛵 ${esc(row.rider_name)}` : '<span class="mpa-muted">ยังไม่มอบหมาย</span>'}</td><td>${row.ordered_at ? esc(new Date(row.ordered_at).toLocaleString('th-TH')) : '-'}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="mpa-button mpa-button-secondary" data-edit-order="${esc(row.id)}">แก้รายการ</button><button class="mpa-button mpa-button-secondary" data-assign-order="${esc(row.id)}">เลือก Rider</button><button class="mpa-button mpa-button-secondary" data-history-order="${esc(row.id)}">ประวัติ</button></div></td></tr>`).join('')}</tbody></table></div>` : `<div class="mpa-state"><p>${tab === 'history' ? 'ยังไม่มีออเดอร์เก่าที่ปิดงานแล้ว' : 'ไม่มีออเดอร์ปัจจุบันค้างอยู่'}</p></div>`;
-        filtered.forEach(row => { document.querySelector(`[data-edit-order="${CSS.escape(row.id)}"]`)?.addEventListener('click', () => orderItemEditor(row, load)); document.querySelector(`[data-assign-order="${CSS.escape(row.id)}"]`)?.addEventListener('click', () => riderAssignment(row, load)); document.querySelector(`[data-history-order="${CSS.escape(row.id)}"]`)?.addEventListener('click', () => orderHistory(row)); });
+        const counts = (rows || []).reduce((result, row) => { result[orderBucket(row.status)] += 1; return result; }, { new: 0, active: 0, history: 0 });
+        Object.entries(counts).forEach(([bucket, count]) => { const countNode = document.querySelector(`[data-order-count="${bucket}"]`); if (countNode) countNode.textContent = String(count); });
+        const filtered = (rows || []).filter(row => orderBucket(row.status) === tab && (!search || [row.id, row.customer_name, row.store_name, row.rider_name].some(value => String(value || '').toLowerCase().includes(search.toLowerCase()))));
+        const emptyMessages = { new: 'ยังไม่มีออเดอร์ใหม่ที่ต้องตรวจสอบ', active: 'ไม่มีออเดอร์ที่กำลังดำเนินการ', history: 'ยังไม่มีออเดอร์เก่าที่ปิดงานแล้ว' };
+        host.innerHTML = filtered.length ? `<div class="admin-order-grid">${filtered.map(row => `<article class="admin-order-card"><header><div><small>ORDER</small><h2>${esc(row.id)}</h2></div><span class="mpa-badge">${esc(statusLabel(row.status))}</span></header><dl><div><dt>ลูกค้า</dt><dd>${esc(row.customer_name || '-')}</dd></div><div><dt>ร้านค้า</dt><dd>${esc(row.store_name || '-')}</dd></div><div><dt>Rider</dt><dd>${row.rider_name ? `🛵 ${esc(row.rider_name)}` : 'ยังไม่มอบหมาย'}</dd></div><div><dt>เวลา</dt><dd>${row.ordered_at ? esc(new Date(row.ordered_at).toLocaleString('th-TH')) : '-'}</dd></div></dl><div class="admin-order-summary"><span>ยอดชำระ <b>${money(row.payable ?? row.total)}</b></span><span>ยอดรวม ${money(row.total)}</span></div><div class="admin-order-actions"><button class="mpa-button" data-status-order="${esc(row.id)}">เปลี่ยนสถานะ</button><button class="mpa-button mpa-button-secondary" data-edit-order="${esc(row.id)}">แก้รายการ</button><button class="mpa-button mpa-button-secondary" data-assign-order="${esc(row.id)}">เลือก Rider</button><button class="mpa-button mpa-button-secondary" data-history-order="${esc(row.id)}">ประวัติ</button></div></article>`).join('')}</div>` : `<div class="mpa-state"><p>${emptyMessages[tab]}</p></div>`;
+        filtered.forEach(row => { document.querySelector(`[data-status-order="${CSS.escape(row.id)}"]`)?.addEventListener('click', () => orderStatusEditor(row, load)); document.querySelector(`[data-edit-order="${CSS.escape(row.id)}"]`)?.addEventListener('click', () => orderItemEditor(row, load)); document.querySelector(`[data-assign-order="${CSS.escape(row.id)}"]`)?.addEventListener('click', () => riderAssignment(row, load)); document.querySelector(`[data-history-order="${CSS.escape(row.id)}"]`)?.addEventListener('click', () => orderHistory(row)); });
       };
-      document.querySelectorAll('[data-order-tab]').forEach(button => button.onclick = () => { tab = button.dataset.orderTab; document.querySelectorAll('[data-order-tab]').forEach(item => item.classList.toggle('mpa-button-secondary', item !== button)); render(); });
+      document.querySelectorAll('[data-order-tab]').forEach(button => button.onclick = () => { tab = button.dataset.orderTab; document.querySelectorAll('[data-order-tab]').forEach(item => { item.classList.toggle('mpa-button-secondary', item !== button); item.setAttribute('aria-selected', String(item === button)); }); render(); });
       document.querySelector('#showHistory').onclick = () => { tab = 'history'; document.querySelector('[data-order-tab="history"]')?.click(); };
       document.querySelector('#refreshOrders').onclick = () => load().catch(error => notice(error.message, 'error'));
       document.querySelector('#orderSearch').oninput = event => { search = event.target.value.trim(); render(); };
