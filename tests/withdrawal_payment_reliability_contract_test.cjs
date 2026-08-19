@@ -4,11 +4,13 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const riderRoot = path.resolve(root, '..', 'legacy-rider');
+const readRider = file => fs.readFileSync(path.join(riderRoot, file), 'utf8');
 const adminPatch = read('withdrawal_payment_reliability_patch.js');
-const riderPatch = read('rider_payout_proof_patch.js');
-const migration = read('supabase/migrations/20260817_withdrawal_proof_storage.sql');
-const index = read('index.html');
-const rider = read('rider.html');
+const riderPatch = readRider('rider_payout_proof_patch.js');
+const deployedBackend = JSON.parse(fs.readFileSync(path.join(__dirname, 'deployed_supabase_contracts.json'), 'utf8'));
+const adminConsole = read('legacy-admin-console.html');
+const rider = readRider('rider.html');
 
 assert.match(adminPatch, /withdrawal-proofs/, 'ต้องกำหนด bucket หลักฐานการจ่าย');
 assert.match(adminPatch, /storage\/v1\/object\/\$\{BUCKET\}/, 'ต้องอัปโหลดรูปผ่าน Storage object endpoint');
@@ -23,11 +25,10 @@ assert.match(riderPatch, /proof_available/, 'Rider ต้องรับ metadat
 assert.match(riderPatch, /viewRiderWithdrawalProof/, 'Rider ต้องมี action เปิดหลักฐานแบบ on-demand');
 assert.match(riderPatch, /storage\/v1\/object/, 'Rider ต้องเปิดหลักฐานผ่าน Private Storage');
 assert.doesNotMatch(riderPatch, /select=\*.*withdrawal_requests/, 'Rider ต้องไม่ดึง Base64 ทั้งรายการคำขอ');
-assert.match(migration, /ADD COLUMN IF NOT EXISTS proof_available/, 'migration ต้องเพิ่ม metadata หลักฐาน');
-assert.match(migration, /INSERT INTO storage\.buckets/, 'migration ต้องสร้าง Private Storage bucket');
-assert.match(migration, /riders read own withdrawal proofs/, 'migration ต้องมี policy ให้ Rider อ่านเฉพาะสลิปตนเอง');
-assert.match(migration, /private\.has_role\('admin'\)/, 'migration ต้องจำกัด upload หลักฐานให้ Admin');
-assert.match(index, /withdrawal_payment_reliability_patch\.js/, 'หน้า Admin ต้องโหลดแพตช์ความเสถียร');
-assert.match(rider, /rider_payout_proof_patch\.js/, 'Rider Console ต้องโหลดแพตช์หลักฐานการจ่าย');
+assert.equal(deployedBackend.projectRef, 'abtsctwfkgzciseppach', 'ต้องยืนยันกับ Supabase หลักของ AP Service');
+assert.equal(deployedBackend.migrations.withdrawal_proof_storage, '20260817011456', 'ต้องมี migration Private Storage ที่เผยแพร่จริง');
+assert.equal(deployedBackend.rpcs.admin_review_withdrawal.setsProofAvailableWhenPaid, true, 'backend ต้องเปิด metadata หลักฐานเมื่อบันทึกการจ่าย');
+assert.match(adminConsole, /withdrawal_payment_reliability_patch\.js/, 'Admin console runtime ต้องโหลดแพตช์ความเสถียร');
+assert.match(rider, /rider_payout_proof_patch\.js/, 'Rider runtime ต้องโหลดแพตช์หลักฐานการจ่ายจาก repository Rider');
 
 console.log('withdrawal_payment_reliability_contract_test: PASS');

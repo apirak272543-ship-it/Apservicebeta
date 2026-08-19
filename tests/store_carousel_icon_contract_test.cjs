@@ -2,13 +2,13 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'legacy-admin-console.html'), 'utf8');
 const carousel = fs.readFileSync(path.join(root, 'store_carousel_icon_patch.js'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'admin_contact_ui_patch.js'), 'utf8');
 
 const checks = [
   ["carousel patch is loaded after mobile layout patch", html.indexOf("admin_mobile_layout_patch.js") < html.indexOf("store_carousel_icon_patch.js?v=store-carousel-icon-v4-media-safe")],
-  ["catalog migration exposes explicit icon_url alias", fs.existsSync(path.join(root, 'supabase/migrations/20260817_store_icon_alias.sql')) && fs.readFileSync(path.join(root, 'supabase/migrations/20260817_store_icon_alias.sql'), 'utf8').includes('s.image_url AS icon_url')],
+  ["catalog uses real image_url with backward-compatible icon fallback", html.includes("catalog_stores?select=id,name,emoji,image_url") && carousel.includes("store.iconUrl || store.icon_url || store.imageUrl || store.image_url")],
   ["store cards retain the existing openStore action", carousel.includes('onclick="openStore(\'')],
   ["store rail scrolls horizontally with snap behavior", carousel.includes("overflow-x: auto") && carousel.includes("scroll-snap-type: x mandatory")],
   ["auto-slide interval is two seconds", carousel.includes("setInterval(tick, 2000)")],

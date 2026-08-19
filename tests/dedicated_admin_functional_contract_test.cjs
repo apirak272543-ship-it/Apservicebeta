@@ -2,7 +2,7 @@ const fs = require('fs');
 const assert = require('assert');
 const vm = require('vm');
 
-const adminHtml = fs.readFileSync('admin.html', 'utf8');
+const adminHtml = fs.readFileSync('legacy-admin-console.html', 'utf8');
 const bootstrap = fs.readFileSync('admin-dedicated-bootstrap.js', 'utf8');
 
 assert.match(adminHtml, /<title>AP Service \| Dedicated Admin Application<\/title>/, 'Dedicated app ต้องใช้ title ของ Admin');

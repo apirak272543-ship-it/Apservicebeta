@@ -1,7 +1,7 @@
 const fs = require('fs');
 const assert = require('assert');
 
-const html = fs.readFileSync('index.html', 'utf8');
+const html = fs.readFileSync('legacy-admin-console.html', 'utf8');
 const patch = fs.readFileSync('back_navigation_reliability_patch.js', 'utf8');
 
 assert.match(html, /back_navigation_reliability_patch\.js\?v=back-nav-reliability-v1/, 'ต้องโหลดแพตช์ความเสถียรของปุ่มกลับ');

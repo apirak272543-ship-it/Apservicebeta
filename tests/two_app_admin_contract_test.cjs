@@ -2,7 +2,7 @@ const fs = require('fs');
 const assert = require('assert');
 const vm = require('vm');
 
-const adminHtml = fs.readFileSync('admin.html', 'utf8');
+const adminHtml = fs.readFileSync('legacy-admin-console.html', 'utf8');
 
 assert.match(adminHtml, /Dedicated Admin Application/, 'Admin app ต้องมีชื่อหัวข้อที่ถูกต้อง');
 assert.match(adminHtml, /apcx_user/, 'Admin app ต้องใช้กลไก session ร่วมกัน');

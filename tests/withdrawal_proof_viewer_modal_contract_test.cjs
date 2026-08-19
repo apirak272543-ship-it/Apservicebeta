@@ -1,7 +1,7 @@
 const fs = require('fs');
 const assert = require('assert');
 const patch = fs.readFileSync('withdrawal_proof_viewer_modal_patch.js', 'utf8');
-const page = fs.readFileSync('index.html', 'utf8');
+const page = fs.readFileSync('legacy-admin-console.html', 'utf8');
 assert.match(patch, /id = 'withdrawalProofViewer'/, 'ต้องมี modal ดูหลักฐานภายในหน้าเว็บ');
 assert.match(patch, /window\.viewWithdrawalProof = requestId => viewInApp/, 'ปุ่มดูหลักฐานต้องถูกผูกกับตัวแสดงผลภายในหน้าเว็บ');
 assert.match(patch, /URL\.createObjectURL/, 'ต้องใช้ object URL จาก Private Storage ภายในเว็บ');

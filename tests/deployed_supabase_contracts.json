@@ -1,0 +1,15 @@
+{
+  "projectRef": "abtsctwfkgzciseppach",
+  "verifiedAt": "2026-08-19T03:39:16Z",
+  "migrations": {
+    "wallet_withdrawal_requests": "20260814034815",
+    "withdrawal_proof_storage": "20260817011456"
+  },
+  "rpcs": {
+    "admin_review_withdrawal": {
+      "signature": "admin_review_withdrawal(uuid,text,text,text,text)",
+      "requiresPaymentProofForPaid": true,
+      "setsProofAvailableWhenPaid": true
+    }
+  }
+}

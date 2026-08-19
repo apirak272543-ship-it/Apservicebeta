@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const index = fs.readFileSync(path.join(root, 'legacy-admin-console.html'), 'utf8');
 const patch = fs.readFileSync(path.join(root, 'unified_admin_brand_logo_patch.js'), 'utf8');
 
 assert.match(index, /unified_admin_brand_logo_patch\.js\?v=admin-brand-v1/, 'Index must load unified admin brand logo logic');

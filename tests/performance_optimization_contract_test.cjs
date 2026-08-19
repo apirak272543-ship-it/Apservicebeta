@@ -1,7 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const patch = fs.readFileSync('performance_optimization_patch.js', 'utf8');
-const html = fs.readFileSync('index.html', 'utf8');
+const html = fs.readFileSync('legacy-admin-console.html', 'utf8');
 
 assert.match(patch, /requestCache = new Map/, 'ต้องมีแคชคำขอข้อมูล');
 assert.match(patch, /requestInflight = new Map/, 'ต้องรวมคำขอที่กำลังโหลดซ้ำ');

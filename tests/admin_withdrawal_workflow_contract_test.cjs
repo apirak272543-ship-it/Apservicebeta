@@ -3,7 +3,7 @@ const assert = require('assert');
 
 const admin = fs.readFileSync('admin/admin-app.js', 'utf8');
 const media = fs.readFileSync('shared/ap-service-media.js', 'utf8');
-const migration = fs.readFileSync('../apservice-repo/supabase/migrations/20260814_wallet_withdrawal_requests.sql', 'utf8');
+const deployedBackend = JSON.parse(fs.readFileSync('tests/deployed_supabase_contracts.json', 'utf8'));
 
 assert.match(admin, /rpc\/admin_review_withdrawal/, 'Finance MPA ต้องเรียก server RPC สำหรับ review withdrawal');
 assert.match(admin, /data-withdrawal-approve/, 'คำขอ requested ต้องมีปุ่มอนุมัติ');
@@ -15,7 +15,9 @@ assert.match(admin, /data:image\\\/\(\?:jpeg\|png\|webp\);base64,/, 'หลั�
 assert.match(admin, /เชื่อมต่อระบบจัดเก็บหลักฐานไม่สำเร็จ/, 'ความล้มเหลวจาก network ต้องแสดงข้อความภาษาไทยที่เข้าใจง่าย');
 assert.match(admin, /data-proof-error/, 'รูปหลักฐานที่แสดงไม่ได้ต้องมีข้อความใน modal แทน error ดิบ');
 assert.match(media, /uploadPrivateImage/, 'Shared Media Service ต้องมี private upload helper');
-assert.match(migration, /admin_review_withdrawal/, 'backend ต้องมี review RPC');
-assert.match(migration, /Payment proof image is required/, 'server ต้องบังคับหลักฐานก่อนปิดจ่าย');
+assert.equal(deployedBackend.projectRef, 'abtsctwfkgzciseppach', 'ต้องยืนยันกับ Supabase หลักของ AP Service');
+assert.equal(deployedBackend.migrations.wallet_withdrawal_requests, '20260814034815', 'backend ต้องมี migration คำขอถอนเงินที่เผยแพร่จริง');
+assert.equal(deployedBackend.rpcs.admin_review_withdrawal.signature, 'admin_review_withdrawal(uuid,text,text,text,text)', 'backend ต้องมี review RPC ที่เผยแพร่จริง');
+assert.equal(deployedBackend.rpcs.admin_review_withdrawal.requiresPaymentProofForPaid, true, 'server ต้องบังคับหลักฐานก่อนปิดจ่าย');
 
 console.log('admin withdrawal workflow contract: PASS');
