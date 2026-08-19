@@ -18,6 +18,15 @@
     if (!response.ok) throw new Error(result?.error || 'ไม่สามารถบันทึกการจัดการออร์เดอร์ได้');
     return result;
   }
+  async function resolveCancellation(requestId, decision, reason, refundDecision) {
+    const session = await M.auth.refreshSession(false);
+    if (!session?.access_token) throw new Error('เซสชันแอดมินหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    const key = crypto.randomUUID ? crypto.randomUUID() : `cancel-review-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const response = await fetch(`${M.config.url}/functions/v1/role-access`, { method: 'POST', headers: { apikey: M.config.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resolve_order_cancellation', request_id: requestId, decision, reason, refund_decision: refundDecision, idempotency_key: key }) });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.error || 'ไม่สามารถบันทึกผลพิจารณาการยกเลิกได้');
+    return result;
+  }
 
   const legacyNewStatuses = new Set(['รอดำเนินการ', 'รอชำระเงิน', 'รอตรวจสอบ', 'pending']);
   const legacyHistoryStatuses = new Set(['สำเร็จแล้ว', 'เสร็จสิ้น', 'ยกเลิก', 'ถูกยกเลิก', 'ระงับแล้ว', 'ถูกระงับ', 'completed', 'cancelled', 'canceled', 'suspended']);
@@ -113,6 +122,26 @@
       if (!host) return;
       host.innerHTML = rows?.length ? `<div class="mpa-table-wrap"><table class="mpa-table"><thead><tr><th>เวลา</th><th>สถานะ</th><th>ผู้ดำเนินการ</th></tr></thead><tbody>${rows.map(row => `<tr><td>${row.created_at ? esc(new Date(row.created_at).toLocaleString('th-TH')) : '-'}</td><td><span class="mpa-badge">${esc(statusLabel(row.status))}</span></td><td>${esc(row.actor_label || row.actor_id || '-')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="mpa-muted">ยังไม่มีประวัติสถานะที่บันทึกไว้</p>';
     }).catch(error => { const host = dialog.backdrop.querySelector('#orderHistoryBody'); if (host) host.innerHTML = M.ui.error('โหลดประวัติไม่สำเร็จ', error.message); });
+  }
+
+  async function cancellationReview(order, onSaved) {
+    const requests = await request(`order_cancellation_requests?select=id,reason,evidence,status,created_at,requester_role&order_id=eq.${encodeURIComponent(order.id)}&status=eq.requested&order=created_at.desc&limit=1`);
+    const cancellation = requests?.[0];
+    if (!cancellation) return notice('ออร์เดอร์นี้ไม่มีคำขอยกเลิกที่รอพิจารณา', 'error');
+    const payments = await request(`order_payments?select=id,method,expected_amount,captured_amount,status&order_id=eq.${encodeURIComponent(order.id)}&limit=1`);
+    const payment = payments?.[0] || {};
+    const evidence = cancellation.evidence && typeof cancellation.evidence === 'object' ? JSON.stringify(cancellation.evidence) : '-';
+    const body = `<dl class="admin-withdrawal-review-grid"><div><dt>ออร์เดอร์</dt><dd>${esc(order.id)}</dd></div><div><dt>ลูกค้า</dt><dd>${esc(order.customer_name || '-')}</dd></div><div><dt>ร้านค้า</dt><dd>${esc(order.store_name || '-')}</dd></div><div><dt>สถานะปัจจุบัน</dt><dd>${esc(statusLabel(order.status))}</dd></div><div><dt>วิธีชำระ</dt><dd>${esc(payment.method || '-')}</dd></div><div><dt>ยอดที่ต้องชำระ</dt><dd>${money(payment.expected_amount ?? order.payable ?? order.total)}</dd></div><div><dt>สถานะการชำระ</dt><dd>${esc(payment.status || '-')}</dd></div><div><dt>ผู้ขอ</dt><dd>${esc(cancellation.requester_role || 'customer')}</dd></div></dl><label class="mpa-field"><span>เหตุผลจากผู้ขอ</span><textarea rows="3" disabled>${esc(cancellation.reason || '-')}</textarea></label><label class="mpa-field"><span>หลักฐาน/บริบท</span><textarea rows="2" disabled>${esc(evidence)}</textarea></label><label class="mpa-field"><span>ผลพิจารณา</span><select id="cancellationDecision"><option value="approve_no_refund">อนุมัติยกเลิก (ไม่เปิดคำขอคืนเงิน)</option><option value="approve_refund_pending">อนุมัติยกเลิกและเปิดคำขอคืนเงิน</option><option value="reject">ปฏิเสธคำขอยกเลิก</option></select></label><label class="mpa-field"><span>เหตุผลผลพิจารณา</span><textarea id="cancellationReason" rows="3" required placeholder="ลูกค้าจะเห็นเหตุผลนี้ใน timeline"></textarea></label><div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveCancellationDecision">บันทึกผลพิจารณา</button></div>`;
+    const dialog = modal(`พิจารณายกเลิก · ${order.id}`, body, 'พิจารณาคำขอยกเลิกออร์เดอร์');
+    dialog.backdrop.querySelector('#saveCancellationDecision').onclick = async () => {
+      const choice = dialog.backdrop.querySelector('#cancellationDecision')?.value || '';
+      const reason = dialog.backdrop.querySelector('#cancellationReason')?.value.trim() || '';
+      if (reason.length < 3) return notice('กรุณาระบุเหตุผลผลพิจารณาอย่างน้อย 3 ตัวอักษร', 'error');
+      const button = dialog.backdrop.querySelector('#saveCancellationDecision'); button.disabled = true;
+      const decision = choice === 'reject' ? 'reject' : 'approve'; const refundDecision = choice === 'approve_refund_pending' ? 'refund_pending' : 'no_refund';
+      try { await resolveCancellation(cancellation.id, decision, reason, refundDecision); notice(refundDecision === 'refund_pending' ? 'อนุมัติยกเลิกและเปิดคำขอคืนเงินแล้ว' : (decision === 'reject' ? 'ปฏิเสธคำขอยกเลิกแล้ว' : 'อนุมัติยกเลิกแล้ว')); dialog.close(); onSaved(); }
+      catch (error) { button.disabled = false; notice(`บันทึกผลพิจารณาไม่สำเร็จ: ${error.message}`, 'error'); }
+    };
   }
 
   function riderAssignment(order, onSaved) {
@@ -303,6 +332,31 @@
       document.querySelector('#refreshAccounts').onclick = () => load().catch(error => notice(error.message, 'error'));
       try { await load(); } catch (error) { host.innerHTML = M.ui.error('โหลดบัญชีไม่สำเร็จ', error.message); }
     }).catch(error => notice(error.message, 'error'));
+  }
+
+  function enhanceOrderCancellationButtons() {
+    if (document.body.dataset.page !== 'orders') return;
+    document.querySelectorAll('.admin-order-card').forEach(card => {
+      if (card.dataset.cancellationControlReady) return;
+      const orderId = card.querySelector('h2')?.textContent?.trim(); const actions = card.querySelector('.admin-order-actions');
+      if (!orderId || !actions) return;
+      card.dataset.cancellationControlReady = 'true';
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'mpa-button mpa-button-secondary'; button.textContent = 'พิจารณายกเลิก'; button.dataset.cancelOrder = orderId;
+      button.onclick = async () => {
+        try {
+          const rows = await request(`delivery_orders?select=id,customer_name,store_name,status,total,payable& id=eq.${encodeURIComponent(orderId)}&limit=1`.replace('& ', '&'));
+          if (!rows?.[0]) throw new Error('ไม่พบออร์เดอร์ที่ต้องการตรวจ');
+          cancellationReview(rows[0], () => location.reload()).catch(error => notice(error.message || 'เปิดคำขอยกเลิกไม่สำเร็จ', 'error'));
+        } catch (error) { notice(error.message || 'โหลดออร์เดอร์ไม่สำเร็จ', 'error'); }
+      };
+      actions.append(button);
+    });
+  }
+  if (document.body.dataset.page === 'orders') {
+    const cancellationObserver = new MutationObserver(() => requestAnimationFrame(enhanceOrderCancellationButtons));
+    cancellationObserver.observe(document.body, { childList: true, subtree: true });
+    enhanceOrderCancellationButtons();
+    addEventListener('pagehide', () => cancellationObserver.disconnect(), { once: true });
   }
 
   window.APServiceAdminPatch = { dashboard: dashboardPatch, orders: ordersPatch, promotions: mediaCenterPatch, media: mediaCenterPatch };
