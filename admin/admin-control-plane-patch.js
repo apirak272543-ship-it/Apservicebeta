@@ -10,6 +10,14 @@
   const request = (path, options = {}) => M.request(path, { private: true, ...options });
   const runtime = () => window.APServiceAdminRuntime;
   const notice = (message, type) => M.ui.setNotice(message, type);
+  async function manageOrder(order, operation, data, reason) {
+    const session = await M.auth.refreshSession(false);
+    if (!session?.access_token) throw new Error('เซสชันแอดมินหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    const response = await fetch(`${M.config.url}/functions/v1/role-access`, { method: 'POST', headers: { apikey: M.config.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manage_delivery_order', order_id: order.id, operation, data, reason }) });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.error || 'ไม่สามารถบันทึกการจัดการออร์เดอร์ได้');
+    return result;
+  }
 
   const legacyNewStatuses = new Set(['รอดำเนินการ', 'รอชำระเงิน', 'รอตรวจสอบ', 'pending']);
   const legacyHistoryStatuses = new Set(['สำเร็จแล้ว', 'เสร็จสิ้น', 'ยกเลิก', 'ถูกยกเลิก', 'ระงับแล้ว', 'ถูกระงับ', 'completed', 'cancelled', 'canceled', 'suspended']);
@@ -87,25 +95,11 @@
       const reason = dialog.backdrop.querySelector('#orderEditReason')?.value.trim();
       if (!reason) return notice('กรุณาระบุเหตุผลการแก้ไขก่อนบันทึก', 'error');
       if (rows.some(row => !String(row.name || '').trim() || !Number.isFinite(Number(row.unit_price)) || Number(row.unit_price) < 0 || !Number.isInteger(Number(row.quantity)) || Number(row.quantity) < 1)) return notice('กรุณากรอกชื่อ ราคา และจำนวนให้ถูกต้องทุกแถว', 'error');
-      const subtotal = rows.reduce((sum, row) => sum + Number(row.unit_price) * Number(row.quantity), 0);
-      const deliveryFee = Number(order.delivery_fee || 0);
-      const creditUsed = Math.min(Number(order.credit_used || 0), Math.max(0, subtotal + deliveryFee));
-      const total = Math.max(0, subtotal + deliveryFee);
-      const payable = Math.max(0, total - creditUsed);
       if (!window.confirm(`ยืนยันแก้ไขรายการออเดอร์ ${order.id} และบันทึกยอดชำระใหม่หรือไม่?`)) return;
       const save = dialog.backdrop.querySelector('#saveOrderItems'); save.disabled = true;
       try {
-        for (const row of rows) {
-          const payload = { order_id: order.id, item_id: row.item_id || null, name: String(row.name).trim(), emoji: String(row.emoji || '🍽️').trim(), unit_price: Number(row.unit_price), quantity: Number(row.quantity), options: row.options || {} };
-          if (row.id) await request(`delivery_order_items?id=eq.${encodeURIComponent(row.id)}&order_id=eq.${encodeURIComponent(order.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(payload) });
-          else await request('delivery_order_items', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(payload) });
-        }
-        const existingIds = new Set(rows.filter(row => row.id).map(row => row.id));
-        const oldRows = await fetchOrderItems(order.id);
-        for (const old of oldRows || []) if (!existingIds.has(old.id)) await request(`delivery_order_items?id=eq.${encodeURIComponent(old.id)}&order_id=eq.${encodeURIComponent(order.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
-        await request(`delivery_orders?id=eq.${encodeURIComponent(order.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ total, credit_used: creditUsed, payable, updated_at: iso() }) });
-        await audit('order_items_updated', null, reason, { order_id: order.id, total: order.total, payable: order.payable }, { order_id: order.id, total, payable, item_count: rows.length });
-        notice('已保存รายการออเดอร์และคำนวณยอดใหม่แล้ว'); dialog.close(); onSaved();
+        await manageOrder(order, 'items', { items: rows.map(row => ({ id: row.id || null, item_id: row.item_id || null, name: String(row.name).trim(), emoji: String(row.emoji || '🍽️').trim(), unit_price: Number(row.unit_price), quantity: Number(row.quantity), options: row.options || {} })) }, reason);
+        notice('บันทึกรายการออร์เดอร์และคำนวณยอดใหม่แล้ว'); dialog.close(); onSaved();
       } catch (error) { save.disabled = false; notice(`บันทึกรายการไม่สำเร็จ: ${error.message}`, 'error'); }
     };
     fetchOrderItems(order.id).then(data => { rows = (data || []).map(row => ({ ...row, unit_price: Number(row.unit_price || 0), quantity: Math.max(1, Number(row.quantity || 1)) })); render(); }).catch(error => { notice(`โหลดรายการไม่สำเร็จ: ${error.message}`, 'error'); dialog.close(); });
@@ -133,7 +127,7 @@
     dialog.backdrop.querySelector('#saveRider').onclick = async () => {
       const riderId = select?.value || null; const reason = dialog.backdrop.querySelector('#riderReason')?.value.trim() || 'มอบหมาย Rider โดย Admin'; const row = (await fetchRiders()).find(item => item.id === riderId);
       const save = dialog.backdrop.querySelector('#saveRider'); save.disabled = true;
-      try { await request(`delivery_orders?id=eq.${encodeURIComponent(order.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ rider_id: riderId, rider_name: row?.name || null, updated_at: iso() }) }); await audit('order_rider_assigned', row?.id || null, reason, { order_id: order.id, rider_id: order.rider_id || null }, { order_id: order.id, rider_id: riderId, rider_name: row?.name || null }); notice(riderId ? `มอบหมายงานให้ ${row?.name || 'Rider'} แล้ว` : 'ยกเลิกการมอบหมาย Rider แล้ว'); dialog.close(); onSaved(); } catch (error) { save.disabled = false; notice(`บันทึก Rider ไม่สำเร็จ: ${error.message}`, 'error'); }
+      try { await manageOrder(order, 'assign_rider', { rider_id: riderId }, reason); notice(riderId ? `มอบหมายงานให้ ${row?.name || 'Rider'} แล้ว` : 'ยกเลิกการมอบหมาย Rider แล้ว'); dialog.close(); onSaved(); } catch (error) { save.disabled = false; notice(`บันทึก Rider ไม่สำเร็จ: ${error.message}`, 'error'); }
     };
   }
 
@@ -153,8 +147,7 @@
       const reason = dialog.backdrop.querySelector('#orderStatusReason')?.value.trim() || 'เปลี่ยนสถานะโดย Admin';
       const save = dialog.backdrop.querySelector('#saveOrderStatus'); save.disabled = true;
       try {
-        await request(`delivery_orders?id=eq.${encodeURIComponent(order.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: nextStatus, updated_at: iso() }) });
-        await audit('order_status_updated', null, reason, { order_id: order.id, status: order.status }, { order_id: order.id, status: nextStatus });
+        await manageOrder(order, 'status', { status: nextStatus }, reason);
         notice('บันทึกสถานะออเดอร์แล้ว'); dialog.close(); onSaved();
       } catch (error) { save.disabled = false; notice(`บันทึกสถานะไม่สำเร็จ: ${error.message}`, 'error'); }
     };
