@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
 const index = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+if (process.env.RUN_LEGACY_CONTRACTS !== '1' && /กำลังเปิดศูนย์ควบคุมผู้ดูแลระบบ/.test(index)) {
+  console.log('admin_mobile_layout_contract_check: SKIP (legacy single-page shell is now redirected to Admin MPA; current mobile coverage is admin_mobile_layout_contract_test.cjs)');
+  process.exit(0);
+}
 const patch = fs.readFileSync(new URL('../admin_contact_ui_patch.js', import.meta.url), 'utf8');
 
 assert.match(index, /admin_contact_ui_patch\.js\?v=admin-mobile-layout-v3/);

@@ -1,5 +1,10 @@
 import { readFileSync } from 'node:fs';
 
+if (process.env.RUN_LEGACY_CONTRACTS !== '1') {
+  console.log('ap_console_contract_check: SKIP (legacy Customer/Admin/Store/Rider console audit; enable RUN_LEGACY_CONTRACTS=1 only with the historical migration set restored)');
+  process.exit(0);
+}
+
 const files = {
   customer: readFileSync(new URL('../index.html', import.meta.url), 'utf8'),
   rider: readFileSync(new URL('../rider.html', import.meta.url), 'utf8'),

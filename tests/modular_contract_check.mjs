@@ -20,6 +20,12 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 const modulesDir = path.join(root, 'modules');
+const rootIndex = readFileSync(path.join(root, 'index.html'), 'utf8');
+
+if (process.env.RUN_LEGACY_CONTRACTS !== '1' && /กำลังเปิดศูนย์ควบคุมผู้ดูแลระบบ/.test(rootIndex)) {
+  console.log('modular_contract_check: SKIP (legacy global onclick bridge is retired from the default Admin MPA runtime; run with RUN_LEGACY_CONTRACTS=1 for historical console audit)');
+  process.exit(0);
+}
 
 function listJsFiles(dir) {
   const out = [];
