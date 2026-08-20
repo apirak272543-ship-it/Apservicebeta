@@ -124,6 +124,31 @@
     const itemForm = formWrap.querySelector('[data-item-form]');
     const mediaStatus = formWrap.querySelector('[data-menu-media-status]');
     let mediaUploading = false;
+    const [libraryInput, cameraInput] = itemForm.querySelectorAll('[data-menu-media-input]');
+    const mediaActions = libraryInput?.closest('div');
+    if (libraryInput && cameraInput && mediaActions) {
+      libraryInput.accept = 'image/*';
+      libraryInput.removeAttribute('capture');
+      libraryInput.dataset.menuMediaSource = 'library';
+      cameraInput.accept = 'image/*';
+      cameraInput.setAttribute('capture', 'environment');
+      cameraInput.dataset.menuMediaSource = 'camera';
+      const libraryTrigger = document.createElement('button');
+      libraryTrigger.type = 'button';
+      libraryTrigger.className = 'mpa-button mpa-button-secondary';
+      libraryTrigger.dataset.menuLibraryTrigger = '';
+      libraryTrigger.textContent = 'เลือกจากคลังภาพ';
+      const cameraTrigger = document.createElement('button');
+      cameraTrigger.type = 'button';
+      cameraTrigger.className = 'mpa-button mpa-button-secondary';
+      cameraTrigger.dataset.menuCameraTrigger = '';
+      cameraTrigger.textContent = 'ถ่ายรูปใหม่';
+      mediaActions.className = 'ap-menu-media-actions';
+      mediaActions.replaceChildren(libraryTrigger, cameraTrigger, libraryInput, cameraInput);
+      libraryTrigger.onclick = () => libraryInput.click();
+      cameraTrigger.onclick = () => cameraInput.click();
+      if (mediaStatus) mediaStatus.textContent = 'คลังภาพและกล้องเป็นคนละปุ่ม ระบบจะบีบอัดเฉพาะรูปภาพเป็น JPEG คุณภาพ 0.82 (สูงสุด 1200px) โดยคง GIF เดิมก่อนอัปโหลด';
+    }
     itemForm.querySelectorAll('[data-menu-media-input]').forEach(input => input.onchange = async event => {
       const file = event.target.files?.[0];
       if (!file) return;
