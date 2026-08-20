@@ -28,7 +28,7 @@
     backdrop.innerHTML = `<section class="mpa-card mpa-modal ap-menu-admin-modal" role="dialog" aria-modal="true" aria-label="จัดการเมนูร้าน ${esc(store.name || store.id)}">
       <div class="mpa-page-head"><div><h2 style="margin:0">จัดการเมนู · ${esc(store.name || store.id)}</h2><p class="mpa-muted">กำหนดหมวดหมู่ เมนู ราคา รูปภาพ รายละเอียด และสถานะพร้อมขายให้หน้าลูกค้า</p></div><button class="mpa-button mpa-button-secondary" type="button" data-menu-close>ปิด</button></div>
       <div class="ap-menu-admin-tabs"><button class="mpa-button" type="button" data-menu-tab="items">รายการเมนู</button><button class="mpa-button mpa-button-secondary" type="button" data-menu-tab="categories">หมวดหมู่เมนู</button></div>
-      <div data-menu-panel="items"><div class="ap-menu-admin-toolbar"><div><strong>เมนูของร้าน</strong><p class="mpa-muted" style="margin:3px 0 0">เมนูที่ปิดการขายจะยังเก็บข้อมูลไว้เพื่อไม่กระทบออเดอร์เก่า</p></div><button class="mpa-button" type="button" data-add-menu>เพิ่มเมนู</button></div><div data-menu-notice></div><div data-menu-items>${M.ui.loading('กำลังโหลดเมนู…')}</div></div>
+      <div data-menu-panel="items"><div class="ap-menu-admin-toolbar"><div><strong>เมนูของร้าน</strong><p class="mpa-muted" style="margin:3px 0 0">เมนูที่ปิดการขายจะยังเก็บข้อมูลไว้เพื่อไม่กระทบออเดอร์เก่า</p></div><div class="ap-menu-admin-actions"><button class="mpa-button mpa-button-secondary" type="button" data-import-menu-image>นำเข้าจากภาพ</button><button class="mpa-button" type="button" data-add-menu>เพิ่มเมนู</button></div></div><div data-menu-local-ocr></div><div data-menu-notice></div><div data-menu-items>${M.ui.loading('กำลังโหลดเมนู…')}</div></div>
       <div data-menu-panel="categories" hidden><div class="ap-menu-admin-toolbar"><div><strong>หมวดหมู่เมนู</strong><p class="mpa-muted" style="margin:3px 0 0">ใช้หมวดกลางหรือสร้างหมวดเฉพาะร้านได้</p></div><button class="mpa-button" type="button" data-add-category>เพิ่มหมวดหมู่</button></div><div data-menu-categories>${M.ui.loading('กำลังโหลดหมวดหมู่…')}</div></div>
     </section>`;
     document.body.append(backdrop);
@@ -78,6 +78,37 @@
       } catch (error) { button.disabled = false; notice(`อัปเดตสถานะเมนูไม่สำเร็จ: ${error.message}`, 'error'); }
     });
     host.querySelectorAll('[data-add-menu]').forEach(button => button.onclick = () => openItemForm(dialog, store, null));
+    dialog.backdrop.querySelectorAll('[data-import-menu-image]').forEach(button => button.onclick = () => openLocalOcrImport(dialog, store));
+  }
+
+  function openLocalOcrImport(dialog, store) {
+    const host = dialog.backdrop.querySelector('[data-menu-local-ocr]');
+    if (!host) return;
+    if (!window.APServiceLocalMenuOCR?.mount) {
+      notice('ชุด OCR ในเครื่องยังโหลดไม่พร้อม กรุณารีเฟรชหน้า Admin แล้วลองใหม่', 'error');
+      return;
+    }
+    host.hidden = false;
+    if (host.dataset.localOcrMounted === 'true') {
+      host.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    window.APServiceLocalMenuOCR.mount({
+      host,
+      getCategories: () => state.categories,
+      onCommit: async rows => {
+        const result = await req('rpc/import_menu_drafts', {
+          method: 'POST',
+          body: JSON.stringify({ p_store_id: store.id, p_rows: rows, p_source: 'local_ocr' })
+        });
+        await loadData(store.id);
+        renderItems(dialog, store);
+        renderCategories(dialog, store);
+        const summary = Array.isArray(result) ? result[0] : result;
+        return { message: `นำเข้าแบบร่าง ${Number(summary?.inserted_count || rows.length)} รายการแล้ว · ยังไม่เปิดขาย` };
+      }
+    });
+    host.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function openItemForm(dialog, store, item) {
