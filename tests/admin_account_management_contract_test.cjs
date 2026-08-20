@@ -3,6 +3,7 @@ const assert = require('assert');
 
 const admin = fs.readFileSync('admin/admin-app.js', 'utf8');
 const accounts = fs.readFileSync('admin/accounts.html', 'utf8');
+const profile = fs.readFileSync('admin/profile.html', 'utf8');
 const styles = fs.readFileSync('admin/admin-accounts.css', 'utf8');
 
 assert.match(admin, /accounts:\s*\(\)\s*=>\s*operationsV2\('admins'\)/, 'accounts.html ต้อง dispatch เข้า Account Control Plane แทน login fallback');
@@ -18,6 +19,8 @@ assert.match(admin, /href="riders\.html"/, 'บัญชี Rider ต้อง�
 assert.match(accounts, /data-page="accounts"/, 'Accounts route ต้องคงเป็น MPA route เดิม');
 assert.match(accounts, /admin-accounts\.css\?v=accounts-v1/, 'Accounts route ต้องโหลด style เมนูรองเฉพาะหน้า');
 assert.match(accounts, /admin-app\.js\?v=admin-management-v6/, 'Accounts route ต้อง cache-bust runtime ใหม่');
+assert.match(profile, /data-page="accounts"/, 'profile route เดิมต้องเปิด Account Control Plane แทนหน้า 404');
+assert.match(profile, /admin-app\.js\?v=admin-management-v6/, 'profile route ต้องโหลด runtime จัดการบัญชีเวอร์ชันเดียวกับ Accounts');
 assert.match(styles, /\.admin-account-type-menu/, 'ต้องมี responsive style ของเมนูประเภทบัญชี');
 assert.match(styles, /@media\(max-width:760px\)/, 'Accounts sub-menu ต้องรองรับหน้าจอมือถือ');
 
