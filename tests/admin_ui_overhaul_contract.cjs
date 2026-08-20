@@ -17,4 +17,8 @@ assert.match(js, /data-admin-color-swatch/);
 assert.match(js, /data-admin-density/);
 assert.match(js, /MutationObserver/);
 assert.match(js, /localStorage/);
+for (const file of fs.readdirSync('admin').filter(name => name.endsWith('.html'))) {
+  const html = fs.readFileSync(`admin/${file}`, 'utf8');
+  if (html.includes('admin-app.js')) assert.match(html, /overhaul=3a86471/);
+}
 console.log('admin UI overhaul contract: PASS');
