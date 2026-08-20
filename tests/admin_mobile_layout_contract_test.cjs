@@ -12,8 +12,13 @@ assert.match(navigation, /\.admin-nav-primary \.admin-nav-link:nth-child\(n\+4\)
 assert.match(navigation, /\.admin-quick-actions\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/, 'ทางลัดหน้า dashboard ต้องเป็นสองคอลัมน์ที่กดง่ายบนมือถือ');
 assert.match(navigation, /max-height:calc\(100dvh - 82px\);overflow-y:auto;.*touch-action:pan-y/, 'เมนูเพิ่มเติมต้องเลื่อนแนวตั้งได้จริงและไม่ถูก sticky header ตัดบนมือถือ');
 assert.match(navigation, /width:min\(324px,calc\(100vw - 20px\)\)/, 'เมนูเพิ่มเติมต้องมีความกว้างที่กดง่ายและไม่ล้นจอมือถือ');
+assert.match(navigation, /\.admin-nav-more\[open\] \.admin-nav-backdrop\{position:fixed;inset:0/, 'เมนูมือถือควรมี backdrop ที่แตะเพื่อปิดได้');
+assert.match(navigation, /\.admin-nav-popover\{position:fixed;top:64px/, 'เมนูมือถือควรถูกตรึงใน viewport เพื่อไม่ล้นจอ');
 assert.match(runtime, /const primary = links\.slice\(0, 3\), people = links\.slice\(3, 5\)/, 'header ต้องเหลือเฉพาะทางลัดหลักและย้าย Rider/Customer ไปเมนูรอง');
 assert.match(runtime, /navGroup\('บัญชีและบทบาท', people, active\)/, 'เมนูสามจุดต้องเก็บการจัดการบัญชีและบทบาทไว้ครบ');
+assert.match(runtime, /const bindNavMenu = \(\) =>/, 'runtime ต้องผูกพฤติกรรมปิดเมนูมือถือ');
+assert.match(runtime, /event\.key === 'Escape'/, 'เมนูต้องปิดได้ด้วยปุ่ม Escape เพื่อรองรับคีย์บอร์ด');
+assert.match(runtime, /admin-nav-backdrop/, 'runtime ต้องสร้างปุ่ม backdrop สำหรับปิดเมนูเมื่อแตะด้านนอก');
 assert.match(runtime, /mpa-table-wrap/, 'รายการข้อมูล Admin ต้องใช้ table wrapper ที่เลื่อนได้แทนการล้นจอ');
 assert.match(runtime, /mpa-button/, 'Admin MPA ต้องใช้ controls มาตรฐานที่แสดงสถานะและกดได้');
 
