@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const app = fs.readFileSync(path.join(__dirname, '..', 'admin', 'admin-app.js'), 'utf8');
-const promotions = app.slice(app.indexOf('async function promotions()'), app.indexOf('async function customers()'));
+const promotions = app.slice(app.indexOf('async function legacyPromotions()'), app.indexOf('async function customers()'));
 
 assert.ok(promotions.includes("platform_configs?select=key,value&key=eq.customer_promotions&limit=1"), 'Promotions ต้องอ่านรายการจาก central platform config');
 assert.ok(promotions.includes("key: 'customer_promotions'"), 'Promotions ต้องบันทึกรายการลง central platform config เดียวกับ Customer');

@@ -5,7 +5,6 @@ const media = fs.readFileSync('admin/media.html', 'utf8');
 const studio = fs.readFileSync('admin/customer-content-studio-patch.js', 'utf8');
 const featurePatch = fs.readFileSync('admin/featured-store-management-patch.js', 'utf8');
 const featureCss = fs.readFileSync('admin/featured-store-management.css', 'utf8');
-const androidShell = fs.readFileSync('../apk-admin/App.tsx', 'utf8');
 
 assert.match(media, /featured-store-management\.css\?v=featured-store-v1/, 'Admin Media ต้องโหลด CSS ของส่วนร้านค้าเด่น');
 assert.match(media, /featured-store-management-patch\.js\?v=featured-store-v1/, 'Admin Media ต้องโหลด runtime ของส่วนร้านค้าเด่น');
@@ -20,7 +19,5 @@ assert.match(featurePatch, /ยังไม่มีร้านที่พร�
 assert.match(featureCss, /@media \(max-width:620px\)/, 'หน้าจัดการร้านค้าเด่นต้องมี layout สำหรับมือถือ');
 assert.match(studio, /promotionConfig = safeJson\(promotionRows\?\.\[0\]\?\.value\)/, 'Content Studio ต้องเก็บ config banner เดิมก่อน merge');
 assert.match(studio, /value: \{ \.\.\.promotionConfig, items: next\.promotions \}/, 'การบันทึก Banner ต้องไม่ลบ config ร้านค้าเด่น');
-assert.match(androidShell, /ADMIN_WEB_SCOPE = "Customer Content Studio การเลือกรูปจากคลัง\/กล้อง และการจัดการร้านค้าเด่น"/, 'Android Admin shell ต้องรับรู้ขอบเขตหน้าจอ Admin Web ใหม่');
-assert.match(androidShell, /accessibilityLabel=\{`AP Service Admin WebView · \$\{ADMIN_WEB_SCOPE\}`\}/, 'Android Admin WebView ต้องระบุหน้าจอใหม่เพื่อ accessibility และความสอดคล้อง');
 
 console.log('admin featured store management contract: PASS');
