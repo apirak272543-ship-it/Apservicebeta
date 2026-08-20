@@ -29,7 +29,7 @@
     };
     return node;
   };
-  const storeSelect = 'id,name,phone,category_id,location,legal_name,registration_number,contact_name,contact_email,registered_address,pickup_address,delivery_address,registration_document_url';
+  const storeSelect = 'id,name,phone,category_id,location,legal_name,registration_number,contact_name,contact_email,registered_address,pickup_address,delivery_address,registration_document_url,settlement_gp_percent';
   const loadStore = async id => {
     const rows = await runtime().M.request(`stores?select=${storeSelect}&id=eq.${encodeURIComponent(id)}&limit=1`, { private: true });
     if (!rows?.[0]) throw new Error('ไม่พบข้อมูลร้านค้า');
@@ -72,6 +72,13 @@
       if (data.registration_document_url) await saveStoreSection(id, 'documents', { registration_document_url: data.registration_document_url });
     });
   };
+  const openStoreGp = async id => {
+    const row = await loadStore(id); const history = await runtime().M.request(`store_gp_rate_history?select=previous_gp_percent,gp_percent,effective_at,reason&store_id=eq.${encodeURIComponent(id)}&order=effective_at.desc&limit=12`, { private: true }).catch(() => []);
+    const list = history.length ? `<div class="mpa-table-wrap"><table class="mpa-table"><thead><tr><th>เดิม</th><th>ใหม่</th><th>มีผลเมื่อ</th><th>เหตุผล</th></tr></thead><tbody>${history.map(item => `<tr><td>${esc(item.previous_gp_percent)}%</td><td>${esc(item.gp_percent)}%</td><td>${item.effective_at ? new Date(item.effective_at).toLocaleString('th-TH') : '-'}</td><td>${esc(item.reason)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="mpa-muted">ยังไม่มีประวัติการเปลี่ยน GP ระบบจะเริ่มบันทึกจากการเปลี่ยนครั้งนี้</p>';
+    modal(`GP และประวัติอัตรา: ${row.name}`, 'GP ใหม่ใช้กับ settlement ที่สร้างหลังจากเปลี่ยนเท่านั้น ไม่ย้อนแก้รอบสรุปยอดเดิม', `<div class="admin-form-grid">${field('gp_percent', 'GP แพลตฟอร์ม (%)', row.settlement_gp_percent ?? 0, 'number', 'min="0" max="100" step="0.01" required')}${field('reason', 'เหตุผลการเปลี่ยน GP', '', 'textarea', 'required maxlength="500"')}</div><section class="mpa-card" style="box-shadow:none;border:1px solid var(--ap-line);margin-top:14px"><h3 style="margin-top:0">ประวัติ GP ล่าสุด</h3>${list}</section>`, 'บันทึกอัตรา GP', async form => {
+      await invoke({ action: 'update_store_gp_rate', store_id: id, gp_percent: Number(form.elements.gp_percent.value), reason: form.elements.reason.value.trim() });
+    });
+  };
   const openFullStoreCreate = () => modal('เพิ่มร้านค้าและบัญชี Merchant', 'เก็บข้อมูลเป็นหมวดเพื่อให้ Admin แก้ไขภายหลังได้โดยไม่เขียนทับข้อมูลธุรกิจส่วนอื่น', `<div class="admin-form-grid">${field('name', 'ชื่อร้านสำหรับแสดงลูกค้า', '', 'text', 'required')}${field('legal_name', 'ชื่อจดทะเบียน / ชื่อธุรกิจ')}${field('registration_number', 'เลขทะเบียน / เลขประจำตัวผู้เสียภาษี')}${field('category_id', 'ประเภทร้านสำหรับหน้าลูกค้า')}${field('phone', 'เบอร์โทรศัพท์ร้าน', '', 'tel', 'required')}${field('contact_name', 'ชื่อผู้ติดต่อหลัก')}${field('contact_email', 'อีเมลติดต่อร้าน', '', 'email')}${field('registered_address', 'ที่อยู่จดทะเบียน', '', 'textarea')}${field('pickup_address', 'ที่อยู่จุดรับสินค้า / สาขาปฏิบัติการ', '', 'textarea')}${field('delivery_address', 'ที่อยู่รับเอกสาร / ที่อยู่จัดส่ง', '', 'textarea')}${field('display_name', 'ชื่อเจ้าของร้าน / Merchant', '', 'text', 'required')}${field('email', 'อีเมลสำหรับเข้าสู่ระบบ Merchant', '', 'email', 'required')}${field('login_id', 'Login ID Merchant', '', 'text', 'required pattern="[A-Za-z0-9._-]{3,32}"')}${field('password', 'รหัสผ่านเริ่มต้น', '', 'password', 'required minlength="8"')}${field('location_lat', 'ละติจูดหมุดร้าน', '', 'number', 'step="any"')}${field('location_lng', 'ลองจิจูดหมุดร้าน', '', 'number', 'step="any"')}</div>`, 'สร้างร้านและบัญชี', async form => {
     const id = `store-${typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`; const latRaw = form.elements.location_lat.value, lngRaw = form.elements.location_lng.value; let location = null;
     if (latRaw || lngRaw) { const lat = Number(latRaw), lng = Number(lngRaw); if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) throw new Error('พิกัดร้านไม่ถูกต้อง'); location = { lat, lng, source: 'admin', capturedAt: new Date().toISOString() }; }
@@ -87,8 +94,8 @@
       const id = card.querySelector('[data-store-general]')?.dataset.storeGeneral; const actions = card.querySelector('.admin-store-card-actions');
       if (!id || !actions) return;
       card.dataset.completenessReady = 'true';
-      [['identity', 'ข้อมูลธุรกิจ/ติดต่อ'], ['addresses', 'ที่อยู่/พิกัด'], ['documents', 'เอกสารร้าน']].forEach(([kind, label]) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'mpa-button mpa-button-secondary'; button.dataset.storeComplete = `${kind}:${id}`; button.textContent = label; actions.insertBefore(button, actions.firstChild); });
-      actions.querySelectorAll('[data-store-complete]').forEach(button => button.onclick = () => { const [kind, storeId] = button.dataset.storeComplete.split(':'); ({ identity: openStoreIdentity, addresses: openStoreAddresses, documents: openStoreDocument }[kind])(storeId).catch(error => notice(error.message || 'เปิดข้อมูลร้านไม่สำเร็จ', 'error')); });
+      [['identity', 'ข้อมูลธุรกิจ/ติดต่อ'], ['addresses', 'ที่อยู่/พิกัด'], ['documents', 'เอกสารร้าน'], ['gp', 'GP/ประวัติอัตรา']].forEach(([kind, label]) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'mpa-button mpa-button-secondary'; button.dataset.storeComplete = `${kind}:${id}`; button.textContent = label; actions.insertBefore(button, actions.firstChild); });
+      actions.querySelectorAll('[data-store-complete]').forEach(button => button.onclick = () => { const [kind, storeId] = button.dataset.storeComplete.split(':'); ({ identity: openStoreIdentity, addresses: openStoreAddresses, documents: openStoreDocument, gp: openStoreGp }[kind])(storeId).catch(error => notice(error.message || 'เปิดข้อมูลร้านไม่สำเร็จ', 'error')); });
     });
   };
   const payoutRows = host => [...host.querySelectorAll('[data-withdrawal-approve],[data-withdrawal-pay],[data-withdrawal-reject],[data-withdrawal-proof]')].map(button => ({ id: button.dataset.withdrawalApprove || button.dataset.withdrawalPay || button.dataset.withdrawalReject || button.dataset.withdrawalProof, actionBox: button.parentElement })).filter(row => row.id);
