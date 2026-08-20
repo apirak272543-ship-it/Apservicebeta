@@ -403,3 +403,24 @@ main[data-page-content] > .mpa-page-head .admin-page-eyebrow { letter-spacing: .
 @media (prefers-reduced-motion: reduce) {
   main[data-page-content] > .mpa-page-head, .admin-status-chip, .admin-quick-card, .admin-quick-dialog, .admin-quick-backdrop { animation: none; transition: none; }
 }
+
+/* Final specificity bridge: dashboard patch/social-mobile rules must yield to the banner system. */
+body[data-page="dashboard"] main[data-page-content] > .mpa-page-head,
+body[data-page="dashboard"] .mpa-page-head { text-align: left; }
+body[data-page="dashboard"] main[data-page-content] > .mpa-page-head > div:first-child,
+body[data-page="dashboard"] .mpa-page-head > div:first-child { margin: 0; text-align: left; justify-self: start; }
+body[data-page="dashboard"] main[data-page-content] > .mpa-page-head h1,
+body[data-page="dashboard"] main[data-page-content] > .mpa-page-head h2,
+body[data-page="dashboard"] main[data-page-content] > .mpa-page-head .admin-page-eyebrow { color: var(--admin-banner-text) !important; }
+body[data-page="dashboard"] main[data-page-content] > .mpa-page-head > div > p:not(.admin-page-eyebrow) { color: var(--admin-banner-muted) !important; }
+.admin-dashboard-status-strip.admin-quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0 22px; }
+.admin-dashboard-status-strip.admin-quick-actions .admin-quick-action { min-height: 82px; display: flex; align-items: center; justify-content: flex-start; gap: 11px; padding: 15px 16px; border: 1px solid var(--admin-line); border-radius: 20px; background: var(--admin-paper-strong); color: var(--admin-ink); box-shadow: var(--admin-shadow-soft); transition: transform .18s var(--admin-ease), box-shadow .18s var(--admin-ease), border-color .18s ease; }
+.admin-dashboard-status-strip.admin-quick-actions .admin-quick-action:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--admin-accent) 36%, white); background: var(--admin-paper-strong); box-shadow: var(--admin-shadow-hover); }
+.admin-dashboard-status-strip.admin-quick-actions .admin-quick-action span { color: var(--admin-accent-deep); font-size: 13px; font-weight: 900; }
+@media (max-width: 760px) {
+  body[data-page="dashboard"] main[data-page-content] > .mpa-page-head,
+  body[data-page="dashboard"] .mpa-page-head { display: flex; align-items: flex-start; flex-direction: column; justify-content: flex-end; }
+  .admin-dashboard-status-strip.admin-quick-actions { display: flex; overflow-x: auto; gap: 10px; margin: 14px -2px 20px; padding: 2px 2px 9px; scrollbar-width: none; }
+  .admin-dashboard-status-strip.admin-quick-actions::-webkit-scrollbar { display: none; }
+  .admin-dashboard-status-strip.admin-quick-actions .admin-quick-action { flex: 0 0 176px; min-height: 78px; scroll-snap-align: start; }
+}
