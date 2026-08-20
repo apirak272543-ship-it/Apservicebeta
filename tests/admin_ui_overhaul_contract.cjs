@@ -5,7 +5,7 @@ const app = fs.readFileSync('admin/admin-app.js', 'utf8');
 const css = fs.readFileSync('admin/admin-ui-overhaul.css', 'utf8');
 const js = fs.readFileSync('admin/admin-ui-overhaul.js', 'utf8');
 
-assert.match(app, /admin-ui-overhaul\.css\?v=admin-ui-overhaul-v4/);
+assert.match(app, /admin-ui-overhaul\.css\?v=admin-ui-overhaul-v5/);
 assert.match(app, /admin-ui-overhaul\.js\?v=admin-ui-overhaul-v3/);
 assert.match(css, /\.admin-command-backdrop/);
 assert.match(css, /\.admin-color-panel/);

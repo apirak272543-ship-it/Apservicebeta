@@ -7,7 +7,7 @@
   if (!document.getElementById('admin-modern-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-modern-theme-style" rel="stylesheet" href="admin-modern-theme.css?v=admin-complete-ui-v2">');
   if (!document.getElementById('admin-social-mobile-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-social-mobile-style" rel="stylesheet" href="admin-social-mobile.css?v=admin-social-mobile-v1">');
   if (!document.getElementById('admin-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-theme-style" rel="stylesheet" href="admin-theme.css?v=admin-theme-v2">');
-  if (!document.getElementById('admin-ui-overhaul-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-ui-overhaul-style" rel="stylesheet" href="admin-ui-overhaul.css?v=admin-ui-overhaul-v4">');
+  if (!document.getElementById('admin-ui-overhaul-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-ui-overhaul-style" rel="stylesheet" href="admin-ui-overhaul.css?v=admin-ui-overhaul-v5">');
   if (!document.getElementById('admin-ui-overhaul-script')) { const uiScript = document.createElement('script'); uiScript.id = 'admin-ui-overhaul-script'; uiScript.src = 'admin-ui-overhaul.js?v=admin-ui-overhaul-v3'; uiScript.defer = true; document.head.append(uiScript); }
   const adminThemeKey = 'apservice-admin-theme-v1';
   const adminThemeLabels = Object.freeze({ light: 'สว่าง', comfort: 'สบายตา', dark: 'มืด' });
