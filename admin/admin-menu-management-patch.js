@@ -32,9 +32,12 @@
       <div data-menu-panel="categories" hidden><div class="ap-menu-admin-toolbar"><div><strong>หมวดหมู่เมนู</strong><p class="mpa-muted" style="margin:3px 0 0">ใช้หมวดกลางหรือสร้างหมวดเฉพาะร้านได้</p></div><button class="mpa-button" type="button" data-add-category>เพิ่มหมวดหมู่</button></div><div data-menu-categories>${M.ui.loading('กำลังโหลดหมวดหมู่…')}</div></div>
     </section>`;
     document.body.append(backdrop);
+    backdrop.tabIndex = -1;
     const close = () => backdrop.remove();
     backdrop.querySelectorAll('[data-menu-close]').forEach(button => button.onclick = close);
     backdrop.addEventListener('click', event => { if (event.target === backdrop) close(); });
+    backdrop.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(); } });
+    backdrop.focus();
     backdrop.querySelectorAll('[data-menu-tab]').forEach(button => button.onclick = () => {
       const tab = button.dataset.menuTab;
       backdrop.querySelectorAll('[data-menu-tab]').forEach(item => item.classList.toggle('mpa-button-secondary', item !== button));
@@ -64,13 +67,14 @@
     const host = dialog.backdrop.querySelector('[data-menu-items]');
     if (!host) return;
     const rows = [...state.items].sort((a, b) => categoryName(a.category_id).localeCompare(categoryName(b.category_id), 'th') || String(a.name || '').localeCompare(String(b.name || ''), 'th'));
-    host.innerHTML = rows.length ? `<div class="mpa-table-wrap"><table class="mpa-table ap-menu-admin-table"><thead><tr><th>เมนู</th><th>หมวด</th><th>ราคา</th><th>สต็อก</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>${rows.map(row => `<tr><td><div class="ap-menu-admin-name"><span class="ap-menu-admin-thumb">${row.image_url ? `<img src="${esc(row.image_url)}" alt="">` : esc(row.emoji || '🍽️')}</span><span><b>${esc(row.name)}</b><small>${esc(row.description || 'ไม่มีรายละเอียด')}</small></span></div></td><td>${esc(categoryName(row.category_id))}</td><td>${money(row.price)}</td><td>${safeNumber(row.stock)}</td><td><span class="mpa-badge ${row.available === false ? 'ap-menu-off' : ''}">${row.available === false ? 'ปิดการขาย' : 'พร้อมขาย'}${row.promo ? ' · โปรโมชัน' : ''}</span></td><td><div class="ap-menu-admin-actions"><button class="mpa-button mpa-button-secondary" type="button" data-edit-menu="${esc(row.id)}">แก้ไข</button><button class="mpa-button mpa-button-secondary" type="button" data-toggle-menu="${esc(row.id)}">${row.available === false ? 'เปิดขาย' : 'ปิดขาย'}</button></div></td></tr>`).join('')}</tbody></table></div>` : `<div class="ap-menu-empty"><div class="ap-menu-empty-icon">🍽️</div><h3>ร้านนี้ยังไม่มีเมนู</h3><p>เพิ่มเมนูแรกเพื่อให้ลูกค้าเห็นรายการอาหาร ราคา และรายละเอียดในหน้า Customer</p><button class="mpa-button" type="button" data-add-menu>เพิ่มเมนูแรก</button></div>`;
+    host.innerHTML = rows.length ? `<div class="mpa-table-wrap"><table class="mpa-table ap-menu-admin-table"><thead><tr><th>เมนู</th><th>หมวด</th><th>ราคา</th><th>สต็อก</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>${rows.map(row => `<tr><td><div class="ap-menu-admin-name"><span class="ap-menu-admin-thumb">${row.image_url ? `<img src="${esc(row.image_url)}" alt="">` : esc(row.emoji || '🍽️')}</span><span><b>${esc(row.name)}</b><small>${esc(row.description || 'ไม่มีรายละเอียด')}</small></span></div></td><td>${esc(categoryName(row.category_id))}</td><td>${money(row.price)}</td><td>${safeNumber(row.stock)}</td><td><span class="mpa-badge ${row.available === false || safeNumber(row.stock) <= 0 ? 'ap-menu-off' : ''}">${row.available === false ? 'ปิดการขาย' : safeNumber(row.stock) <= 0 ? 'หมดสต็อก' : 'พร้อมขาย'}${row.promo ? ' · โปรโมชัน' : ''}</span></td><td><div class="ap-menu-admin-actions"><button class="mpa-button mpa-button-secondary" type="button" data-edit-menu="${esc(row.id)}">แก้ไข</button><button class="mpa-button mpa-button-secondary" type="button" data-toggle-menu="${esc(row.id)}" ${safeNumber(row.stock) <= 0 ? 'disabled' : ''}>${row.available === false ? 'เปิดขาย' : 'ปิดขาย'}</button></div></td></tr>`).join('')}</tbody></table></div>` : `<div class="ap-menu-empty"><div class="ap-menu-empty-icon">🍽️</div><h3>ร้านนี้ยังไม่มีเมนู</h3><p>เพิ่มเมนูแรกเพื่อให้ลูกค้าเห็นรายการอาหาร ราคา และรายละเอียดในหน้า Customer</p><button class="mpa-button" type="button" data-add-menu>เพิ่มเมนูแรก</button></div>`;
     host.querySelectorAll('[data-edit-menu]').forEach(button => button.onclick = () => openItemForm(dialog, store, state.items.find(row => String(row.id) === String(button.dataset.editMenu))));
     host.querySelectorAll('[data-toggle-menu]').forEach(button => button.onclick = async () => {
       const row = state.items.find(item => String(item.id) === String(button.dataset.toggleMenu));
       if (!row) return;
       button.disabled = true;
       try {
+        if (safeNumber(row.stock) <= 0) throw new Error('สต็อกเป็น 0 จึงยังเปิดขายไม่ได้');
         await req(`menu_items?id=eq.${safeId(row.id)}&store_id=eq.${safeId(store.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ available: row.available === false, updated_at: iso() }) });
         row.available = row.available === false;
         renderItems(dialog, store);
@@ -118,9 +122,12 @@
     const categoryOptions = state.categories.map(row => `<option value="${esc(row.id)}" ${String(row.id) === String(item?.category_id || 'menu-other') ? 'selected' : ''}>${esc(row.icon || '🍴')} ${esc(row.name)}${row.store_id ? ' · เฉพาะร้าน' : ' · กลาง'}</option>`).join('');
     formWrap.innerHTML = `<section class="mpa-card mpa-modal ap-menu-item-form" role="dialog" aria-modal="true" aria-label="${editing ? 'แก้ไขเมนู' : 'เพิ่มเมนู'}"><div class="mpa-page-head"><div><h2 style="margin:0">${editing ? 'แก้ไขเมนู' : 'เพิ่มเมนู'}</h2><p class="mpa-muted">ข้อมูลนี้จะถูกส่งให้หน้า Customer อ่านจาก Supabase</p></div><button class="mpa-button mpa-button-secondary" type="button" data-form-close>ปิด</button></div><form data-item-form><div class="admin-form-grid"><label class="mpa-field"><span>ชื่อเมนู *</span><input name="name" required maxlength="160" value="${esc(item?.name || '')}"></label><label class="mpa-field"><span>ไอคอน / Emoji</span><input name="emoji" maxlength="16" value="${esc(item?.emoji || '🍽️')}"></label><label class="mpa-field"><span>หมวดหมู่</span><select name="category_id">${categoryOptions || '<option value="menu-other">อื่น ๆ</option>'}</select></label><label class="mpa-field"><span>ราคา (บาท) *</span><input name="price" type="number" min="0" step="0.01" required value="${safeNumber(item?.price)}"></label><label class="mpa-field"><span>ต้นทุน (เฉพาะ Admin)</span><input name="cost" type="number" min="0" step="0.01" value="${safeNumber(item?.cost)}"></label><label class="mpa-field"><span>จำนวนคงเหลือ</span><input name="stock" type="number" min="0" step="1" value="${safeNumber(item?.stock, 0)}"></label><label class="mpa-field"><span>สถานะขาย</span><select name="available"><option value="true" ${item?.available === false ? '' : 'selected'}>พร้อมขาย</option><option value="false" ${item?.available === false ? 'selected' : ''}>ปิดการขาย</option></select></label><label class="mpa-field"><span>โปรโมชัน</span><select name="promo"><option value="false" ${item?.promo ? '' : 'selected'}>ไม่ใช่</option><option value="true" ${item?.promo ? 'selected' : ''}>แสดงเป็นโปรโมชัน</option></select></label><label class="mpa-field admin-form-full"><span>รูปภาพเมนู</span><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="mpa-button mpa-button-secondary">เลือกจากคลังภาพ<input hidden type="file" accept="image/jpeg,image/png,image/webp" data-menu-media-input></label><label class="mpa-button mpa-button-secondary">ถ่ายรูป<input hidden type="file" accept="image/jpeg,image/png,image/webp" capture="environment" data-menu-media-input></label></div><input name="image_url" type="url" placeholder="URL เดิม (ถ้ามี)" value="${esc(item?.image_url || '')}"><small class="mpa-muted" data-menu-media-status>เลือกรูปจากคลังหรือกล้อง ระบบจะบีบอัด ตรวจ URL และลงทะเบียน media_assets ก่อนบันทึก</small></label><label class="mpa-field admin-form-full"><span>รายละเอียดเมนู</span><textarea name="description" rows="3" maxlength="500">${esc(item?.description || '')}</textarea></label></div><div class="admin-modal-actions"><button class="mpa-button mpa-button-secondary" type="button" data-form-close>ยกเลิก</button><button class="mpa-button" type="submit">${editing ? 'บันทึกการแก้ไข' : 'เพิ่มเมนู'}</button></div></form></section>`;
     document.body.append(formWrap);
+    formWrap.tabIndex = -1;
     const close = () => formWrap.remove();
     formWrap.querySelectorAll('[data-form-close]').forEach(button => button.onclick = close);
     formWrap.addEventListener('click', event => { if (event.target === formWrap) close(); });
+    formWrap.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(); } });
+    formWrap.focus();
     const itemForm = formWrap.querySelector('[data-item-form]');
     const mediaStatus = formWrap.querySelector('[data-menu-media-status]');
     let mediaUploading = false;
@@ -178,12 +185,12 @@
       if (!name || !Number.isFinite(price) || price < 0 || !Number.isFinite(cost) || cost < 0 || !Number.isInteger(stock) || stock < 0) return notice('กรุณากรอกชื่อ ราคา ต้นทุน และสต็อกให้ถูกต้อง', 'error');
       const image = validImageUrl(value('image_url'));
       if (value('image_url') && !image) return notice('URL รูปภาพต้องเป็น http หรือ https เท่านั้น', 'error');
-      const payload = { id: item?.id || newId('menu'), store_id: store.id, name, emoji: value('emoji') || '🍽️', image_url: image, description: value('description'), price, cost, stock, available: value('available') === 'true', promo: value('promo') === 'true', category_id: value('category_id') || 'menu-other', updated_at: iso() };
+      const payload = { id: item?.id || newId('menu'), store_id: store.id, name, emoji: value('emoji') || '🍽️', image_url: image, description: value('description'), price, cost, stock, available: value('available') === 'true' && stock > 0, promo: value('promo') === 'true', category_id: value('category_id') || 'menu-other', updated_at: iso() };
       const save = form.querySelector('[type="submit"]'); save.disabled = true;
       try {
         if (editing) await req(`menu_items?id=eq.${safeId(item.id)}&store_id=eq.${safeId(store.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(payload) });
         else await req('menu_items', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(payload) });
-        await loadData(store.id); close(); renderItems(dialog, store); notice(editing ? `แก้ไขเมนู ${name} แล้ว` : `เพิ่มเมนู ${name} แล้ว`);
+        await loadData(store.id); close(); renderItems(dialog, store); notice(stock > 0 && value('available') === 'true' ? (editing ? `แก้ไขเมนู ${name} และเปิดขายแล้ว` : `เพิ่มเมนู ${name} และเปิดขายแล้ว`) : (editing ? `แก้ไขเมนู ${name} แล้ว แต่สต็อกเป็น 0 จึงปิดขายอัตโนมัติ` : `เพิ่มเมนู ${name} แล้ว แต่สต็อกเป็น 0 จึงปิดขายอัตโนมัติ`));
       } catch (error) { save.disabled = false; notice(`บันทึกเมนูไม่สำเร็จ: ${error.message}`, 'error'); }
     };
   }
@@ -209,8 +216,12 @@
     backdrop.className = 'mpa-modal-backdrop ap-menu-form-backdrop';
     backdrop.innerHTML = `<section class="mpa-card mpa-modal ap-menu-category-form" role="dialog" aria-modal="true" aria-label="${editing ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่'}"><div class="mpa-page-head"><div><h2 style="margin:0">${editing ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่เฉพาะร้าน'}</h2><p class="mpa-muted">หมวดกลางแก้ไขได้เฉพาะข้อมูลของหมวดนั้น แต่หมวดใหม่จะผูกกับร้านนี้</p></div><button class="mpa-button mpa-button-secondary" type="button" data-category-close>ปิด</button></div><form data-category-form><div class="admin-form-grid"><label class="mpa-field"><span>ชื่อหมวด *</span><input name="name" required maxlength="80" value="${esc(category?.name || '')}"></label><label class="mpa-field"><span>ไอคอน</span><input name="icon" maxlength="16" value="${esc(category?.icon || '🍽️')}"></label><label class="mpa-field"><span>ลำดับการแสดง</span><input name="sort_order" type="number" step="1" value="${safeNumber(category?.sort_order, 0)}"></label><label class="mpa-field"><span>สถานะ</span><select name="active"><option value="true" ${category?.active === false ? '' : 'selected'}>ใช้งาน</option><option value="false" ${category?.active === false ? 'selected' : ''}>ปิดใช้งาน</option></select></label><label class="mpa-field admin-form-full"><span>คำอธิบาย</span><textarea name="description" rows="2" maxlength="280">${esc(category?.description || '')}</textarea></label></div><div class="admin-modal-actions"><button class="mpa-button mpa-button-secondary" type="button" data-category-close>ยกเลิก</button><button class="mpa-button" type="submit">${editing ? 'บันทึกหมวดหมู่' : 'เพิ่มหมวดหมู่'}</button></div></form></section>`;
     document.body.append(backdrop);
+    backdrop.tabIndex = -1;
     const close = () => backdrop.remove();
     backdrop.querySelectorAll('[data-category-close]').forEach(button => button.onclick = close);
+    backdrop.addEventListener('click', event => { if (event.target === backdrop) close(); });
+    backdrop.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(); } });
+    backdrop.focus();
     backdrop.querySelector('[data-category-form]').onsubmit = async event => {
       event.preventDefault();
       const form = event.currentTarget;

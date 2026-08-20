@@ -79,8 +79,11 @@
     host.innerHTML = `<section class="mpa-card mpa-modal" role="dialog" aria-modal="true" aria-label="${esc(label)}">${inner}</section>`;
     document.body.append(host);
     const close = () => host.remove();
+    host.tabIndex = -1;
     host.querySelectorAll('[data-retail-close]').forEach(button => { button.onclick = close; });
     host.addEventListener('click', event => { if (event.target === host) close(); });
+    host.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(); } });
+    host.focus();
     return { host, close };
   }
 
