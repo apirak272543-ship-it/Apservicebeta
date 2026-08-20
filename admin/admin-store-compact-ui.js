@@ -68,7 +68,11 @@
   function applyFilter() {
     const select = document.getElementById('storeCategoryFilter');
     if (!select) return;
-    document.querySelectorAll('.admin-store-card.is-compact').forEach(card => { card.hidden = select.value !== 'all' && card.dataset.storeCategory !== select.value; });
+    document.querySelectorAll('.admin-store-card.is-compact').forEach(card => {
+      const hidden = select.value !== 'all' && card.dataset.storeCategory !== select.value;
+      card.hidden = hidden;
+      card.style.setProperty('display', hidden ? 'none' : '', 'important');
+    });
   }
 
   function enhance() {
