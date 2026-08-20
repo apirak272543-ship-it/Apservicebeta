@@ -621,3 +621,76 @@ html[data-login-app="admin"] .field select:focus { border-color: #c94b5e; box-sh
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Mobile visual QA fix: the hero must stack, never squeeze Thai copy into a narrow column. */
+@media (max-width: 760px) {
+  body[data-page="dashboard"] .mpa-page-head {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: 14px;
+    padding: 22px 18px 20px;
+    align-items: start;
+  }
+  body[data-page="dashboard"] .mpa-page-head h1 {
+    max-width: none;
+    margin: 0;
+    font-size: clamp(30px, 8vw, 38px);
+    line-height: 1.18;
+    letter-spacing: -.045em;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+  body[data-page="dashboard"] .mpa-page-head p:not(.admin-page-eyebrow) {
+    max-width: none;
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  body[data-page="dashboard"] .mpa-page-head .mpa-button {
+    width: 100%;
+    margin-top: 0;
+    min-height: 48px;
+  }
+}
+
+
+/* Visual QA correction: the shared page head is flex, so mobile must explicitly stack its children. */
+@media (max-width: 760px) {
+  body[data-page="dashboard"] .mpa-page-head {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  body[data-page="dashboard"] .mpa-page-head > div {
+    width: 100%;
+    min-width: 0;
+  }
+  body[data-page="dashboard"] .mpa-page-head h1,
+  body[data-page="dashboard"] .mpa-page-head p {
+    width: auto;
+  }
+}
+
+
+/* Dashboard visual QA: status cards need intentional typography, not browser-link blue. */
+body[data-page="dashboard"] #stats .admin-stat-link {
+  color: #7a2239;
+  text-decoration: none;
+}
+body[data-page="dashboard"] #stats .admin-stat-link strong {
+  display: block;
+  color: #7a2239;
+  font-size: clamp(17px, 1.6vw, 22px);
+  line-height: 1.38;
+  letter-spacing: -.025em;
+}
+body[data-page="dashboard"] #stats .admin-stat-link small {
+  display: block;
+  margin-top: 7px;
+  color: #8c6972;
+  font-size: 12px;
+  line-height: 1.5;
+}
+body[data-page="dashboard"] #stats .admin-stat-link:hover strong { color: #a92f46; }
