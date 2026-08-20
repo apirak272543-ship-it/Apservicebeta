@@ -1,0 +1,13 @@
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const page = fs.readFileSync(path.join(root, 'admin/operations.html'), 'utf8');
+const inbox = fs.readFileSync(path.join(root, 'admin/admin-support-inbox.js'), 'utf8');
+assert.match(page, /admin-support-inbox\.js/, 'Operations must load the Support Inbox patch');
+assert.match(inbox, /support_conversations\?select=/, 'Support Inbox must load real conversations');
+assert.match(inbox, /support_messages\?select=/, 'Support Inbox must load real messages');
+assert.match(inbox, /action: 'support_conversation'/, 'Support Inbox must use the central server action');
+assert.match(inbox, /support_action: 'reply'/, 'Support Inbox must support Admin replies');
+assert.match(inbox, /support_action: action/, 'Support Inbox must support close/reopen');
+console.log('admin_support_inbox_contract_test: PASS');
