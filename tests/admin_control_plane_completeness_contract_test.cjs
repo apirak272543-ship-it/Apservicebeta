@@ -4,6 +4,7 @@ const assert = require('assert');
 const admin = fs.readFileSync('admin/admin-app.js', 'utf8');
 const patch = fs.readFileSync('admin/admin-control-plane-patch.js', 'utf8');
 const storesPage = fs.readFileSync('admin/stores.html', 'utf8');
+const storeLocationPicker = fs.readFileSync('admin/admin-store-location-picker.js', 'utf8');
 const financePage = fs.readFileSync('admin/finance.html', 'utf8');
 const loginPage = fs.readFileSync('admin/index.html', 'utf8');
 const completeness = fs.readFileSync('admin/admin-control-plane-completeness.js', 'utf8');
@@ -18,6 +19,9 @@ assert.doesNotMatch(admin, /เข้าสู่ระบบด้วยบั�
 assert.doesNotMatch(admin, /Admin Application นี้ทำงานแยกจาก Customer Application/, 'หน้า Login ต้องไม่มีข้อความระบบด้านล่าง');
 assert.match(admin, /aria-label="อีเมล"/, 'หน้า Login ต้องคง label สำหรับ accessibility');
 assert.match(storesPage, /admin-control-plane-completeness\.js/, 'หน้าร้านต้องโหลด action sheet ความครบถ้วน');
+assert.match(storesPage, /admin-store-location-picker\.js\?v=store-map-v2/, 'หน้าร้านต้องโหลดตัวเลือกตำแหน่งรุ่นล่าสุด');
+assert.match(storeLocationPicker, /form\[data-store-form\], form\[data-form\]/, 'ตัวเลือกตำแหน่งต้องรองรับฟอร์ม Store Control Plane ที่สร้างจริง');
+assert.match(storeLocationPicker, /form\.elements\.location_lat && form\.elements\.location_lng/, 'ตัวเลือกตำแหน่งต้องติดตั้งเฉพาะฟอร์มที่มีพิกัดร้าน');
 assert.match(financePage, /admin-control-plane-completeness\.js/, 'หน้าการเงินต้องโหลด withdrawal review sheet');
 assert.match(loginPage, /admin-control-plane-completeness\.css/, 'หน้า Login ต้องโหลด style สำหรับ hidden accessibility labels');
 assert.match(completeness, /ข้อมูลนิติบุคคลและติดต่อ/, 'Store ต้องมี action ข้อมูลนิติบุคคลและติดต่อ');

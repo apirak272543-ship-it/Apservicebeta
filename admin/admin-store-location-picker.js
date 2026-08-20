@@ -98,7 +98,11 @@
     searchInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); searchLocation(); } });
   }
 
-  function scan() { document.querySelectorAll('form[data-store-form]').forEach(mountPicker); }
+  function scan() {
+    document.querySelectorAll('form[data-store-form], form[data-form]').forEach(form => {
+      if (form.elements.location_lat && form.elements.location_lng) mountPicker(form);
+    });
+  }
   new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan, { once: true }); else scan();
 }());
