@@ -253,3 +253,138 @@ body { letter-spacing: -0.005em; }
   object-fit: cover;
   object-position: center;
 }
+
+
+/* Dashboard UX v2 — scoped to Admin dashboard, visual-only and feature-preserving. */
+body[data-page="dashboard"] .mpa-shell {
+  width: min(1280px, 100%);
+  padding-inline: clamp(14px, 3vw, 28px);
+}
+body[data-page="dashboard"] .mpa-page-head {
+  min-height: 168px;
+  align-items: flex-end;
+  padding: clamp(24px, 4vw, 38px);
+  background:
+    radial-gradient(circle at 92% 18%, rgba(255, 197, 205, .48), transparent 12rem),
+    linear-gradient(135deg, #fff 0%, #fff5f7 58%, #fff9ed 100%);
+}
+body[data-page="dashboard"] .mpa-page-head h1 {
+  max-width: 720px;
+  font-size: clamp(26px, 3.2vw, 38px);
+  line-height: 1.18;
+}
+body[data-page="dashboard"] .mpa-page-head p:not(.admin-page-eyebrow) {
+  max-width: 650px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+body[data-page="dashboard"] .mpa-page-head .mpa-button {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+}
+body[data-page="dashboard"] .admin-dashboard-section:first-of-type {
+  margin-top: 0;
+}
+body[data-page="dashboard"] .admin-dashboard-section {
+  padding: clamp(18px, 2.8vw, 26px);
+}
+body[data-page="dashboard"] .admin-section-heading {
+  margin-bottom: 18px;
+}
+body[data-page="dashboard"] .admin-section-heading h2 {
+  font-size: clamp(19px, 2vw, 24px);
+}
+body[data-page="dashboard"] .admin-finance-grid {
+  grid-template-columns: repeat(5, minmax(190px, 1fr));
+  gap: 14px;
+  overflow: visible;
+}
+body[data-page="dashboard"] .admin-finance-card {
+  min-height: 164px;
+  padding: 18px;
+  border-radius: 20px;
+}
+body[data-page="dashboard"] .admin-finance-card strong {
+  font-size: clamp(21px, 2vw, 27px);
+}
+body[data-page="dashboard"] .admin-dashboard-section:nth-of-type(2) {
+  background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(255,249,249,.96));
+}
+body[data-page="dashboard"] #stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+body[data-page="dashboard"] #stats .admin-stat-link {
+  min-height: 144px;
+  padding: 19px;
+  border-radius: 20px;
+  background: #fff;
+  border-color: #f0d9df;
+  box-shadow: 0 9px 24px rgba(143, 38, 58, .065);
+}
+body[data-page="dashboard"] #stats .admin-stat-link::before {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 5px;
+  margin-bottom: 17px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d94a5d, #f3a1ac);
+}
+body[data-page="dashboard"] #stats .admin-stat-link:nth-child(2)::before { background: linear-gradient(90deg, #d89124, #f1ca72); }
+body[data-page="dashboard"] #stats .admin-stat-link:nth-child(3)::before { background: linear-gradient(90deg, #6b55bd, #b7a5ef); }
+body[data-page="dashboard"] #stats .admin-stat-link:nth-child(4)::before { background: linear-gradient(90deg, #2b8b68, #94d5b5); }
+body[data-page="dashboard"] #stats .admin-stat-link small {
+  display: block;
+  line-height: 1.45;
+}
+body[data-page="dashboard"] .admin-dashboard-attention {
+  padding: clamp(18px, 2.8vw, 26px);
+  background: linear-gradient(145deg, #fff, #fffdf9);
+}
+body[data-page="dashboard"] .admin-dashboard-attention > h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 20px;
+}
+body[data-page="dashboard"] .admin-dashboard-attention > h2::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #d94a5d;
+  box-shadow: 0 0 0 5px rgba(217, 74, 93, .12);
+}
+body[data-page="dashboard"] #pending {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+}
+body[data-page="dashboard"] #pending p {
+  margin: 0;
+  padding: 13px 15px;
+  width: 100%;
+  border-radius: 13px;
+  background: #fff7f8;
+  color: #735b63;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+@media (max-width: 920px) {
+  body[data-page="dashboard"] .admin-finance-grid { overflow-x: auto; padding-bottom: 9px; }
+  body[data-page="dashboard"] #stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  body[data-page="dashboard"] .mpa-page-head { min-height: 0; align-items: flex-start; }
+  body[data-page="dashboard"] .mpa-page-head .mpa-button { margin-top: 8px; }
+  body[data-page="dashboard"] .admin-dashboard-section { padding: 17px; }
+  body[data-page="dashboard"] .admin-finance-grid { grid-template-columns: repeat(5, minmax(208px, 1fr)); margin-right: -5px; }
+  body[data-page="dashboard"] #stats .admin-stat-link { min-height: 126px; padding: 16px; }
+}
+@media (max-width: 480px) {
+  body[data-page="dashboard"] #stats { grid-template-columns: 1fr; }
+  body[data-page="dashboard"] #stats .admin-stat-link { min-height: 116px; }
+}
