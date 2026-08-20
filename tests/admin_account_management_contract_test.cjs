@@ -5,6 +5,7 @@ const admin = fs.readFileSync('admin/admin-app.js', 'utf8');
 const accounts = fs.readFileSync('admin/accounts.html', 'utf8');
 const profile = fs.readFileSync('admin/profile.html', 'utf8');
 const styles = fs.readFileSync('admin/admin-accounts.css', 'utf8');
+const compactScript = fs.readFileSync('admin/admin-user-compact-ui.js', 'utf8');
 
 assert.match(admin, /accounts:\s*\(\)\s*=>\s*operationsV2\('admins'\)/, 'accounts.html ต้อง dispatch เข้า Account Control Plane แทน login fallback');
 assert.match(admin, /async function operationsV2\(defaultFeature = 'rider-applications'\)/, 'Account Control Plane ต้องรับ default feature สำหรับ route Accounts');
@@ -25,10 +26,12 @@ assert.match(accounts, /data-page="accounts"/, 'Accounts route ต้องค�
 assert.match(accounts, /admin-accounts\.css\?v=accounts-v2/, 'Accounts route ต้อง cache-bust style รายละเอียดบัญชีใหม่');
 assert.match(accounts, /admin-app\.js\?v=admin-management-v9/, 'Accounts route ต้อง cache-bust runtime และ governance ล่าสุด');
 assert.match(accounts, /admin-override-governance\.js\?v=admin-override-v1/, 'Accounts route ต้องคง governance จากงานร่วม');
+assert.match(accounts, /admin-user-compact-ui\.js\?v=user-compact-v2/, 'Accounts route ต้องโหลด action sheet เวอร์ชันที่เก็บคำสั่งเดิมไว้');
 assert.match(profile, /data-page="accounts"/, 'profile route เดิมต้องเปิด Account Control Plane แทนหน้า 404');
 assert.match(profile, /admin-accounts\.css\?v=accounts-v2/, 'profile route ต้องโหลด style รายละเอียดบัญชีใหม่');
 assert.match(profile, /admin-app\.js\?v=admin-management-v9/, 'profile route ต้องโหลด runtime เวอร์ชันเดียวกับ Accounts');
 assert.match(profile, /admin-override-governance\.js\?v=admin-override-v1/, 'profile route ต้องคง governance จากงานร่วม');
+assert.match(compactScript, /admin-user-compact-actions/, 'เมนูย่อบัญชีต้องเก็บปุ่มคำสั่งเดิมไว้เพื่อเปิด action sheet ได้');
 assert.match(styles, /\.admin-account-type-menu/, 'ต้องมี responsive style ของเมนูประเภทบัญชี');
 assert.match(styles, /\.admin-account-detail-list/, 'ต้องมีสไตล์รายการรายละเอียดบัญชี');
 assert.match(styles, /\.mpa-modal \.mpa-table-wrap/, 'audit table ต้องเลื่อนแนวนอนได้ใน modal');

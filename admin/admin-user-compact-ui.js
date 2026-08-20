@@ -35,7 +35,8 @@
       if (!actions || !actions.querySelector('.mpa-button')) return;
       card.dataset.compactReady = 'true';
       card.classList.add('is-compact');
-      actions.innerHTML = '<button class="admin-user-manage-trigger" type="button" data-user-manage aria-label="จัดการบัญชี">จัดการ ⋯</button>';
+      actions.classList.add('admin-user-compact-actions');
+      actions.insertAdjacentHTML('beforeend', '<button class="admin-user-manage-trigger" type="button" data-user-manage aria-label="จัดการบัญชี">จัดการ ⋯</button>');
       actions.querySelector('[data-user-manage]').addEventListener('click', () => openSheet(card, title, subtitle));
     });
   }
