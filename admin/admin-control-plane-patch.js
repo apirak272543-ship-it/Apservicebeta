@@ -10,19 +10,20 @@
   const request = (path, options = {}) => M.request(path, { private: true, ...options });
   const runtime = () => window.APServiceAdminRuntime;
   const notice = (message, type) => M.ui.setNotice(message, type);
-  async function manageOrder(order, operation, data, reason) {
+  const override = () => window.APServiceAdminOverride;
+  async function manageOrder(order, operation, data, reason, evidencePath = '') {
     const session = await M.auth.refreshSession(false);
     if (!session?.access_token) throw new Error('เซสชันแอดมินหมดอายุ กรุณาเข้าสู่ระบบใหม่');
-    const response = await fetch(`${M.config.url}/functions/v1/role-access`, { method: 'POST', headers: { apikey: M.config.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manage_delivery_order', order_id: order.id, operation, data, reason }) });
+    const response = await fetch(`${M.config.url}/functions/v1/role-access`, { method: 'POST', headers: { apikey: M.config.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manage_delivery_order', order_id: order.id, operation, data, reason, evidence_path: evidencePath || '' }) });
     const result = await response.json().catch(() => null);
     if (!response.ok) throw new Error(result?.error || 'ไม่สามารถบันทึกการจัดการออร์เดอร์ได้');
     return result;
   }
-  async function resolveCancellation(requestId, decision, reason, refundDecision) {
+  async function resolveCancellation(requestId, decision, reason, refundDecision, evidencePath = '') {
     const session = await M.auth.refreshSession(false);
     if (!session?.access_token) throw new Error('เซสชันแอดมินหมดอายุ กรุณาเข้าสู่ระบบใหม่');
     const key = crypto.randomUUID ? crypto.randomUUID() : `cancel-review-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const response = await fetch(`${M.config.url}/functions/v1/role-access`, { method: 'POST', headers: { apikey: M.config.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resolve_order_cancellation', request_id: requestId, decision, reason, refund_decision: refundDecision, idempotency_key: key }) });
+    const response = await fetch(`${M.config.url}/functions/v1/role-access`, { method: 'POST', headers: { apikey: M.config.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resolve_order_cancellation', request_id: requestId, decision, reason, refund_decision: refundDecision, idempotency_key: key, evidence_path: evidencePath || '' }) });
     const result = await response.json().catch(() => null);
     if (!response.ok) throw new Error(result?.error || 'ไม่สามารถบันทึกผลพิจารณาการยกเลิกได้');
     return result;
@@ -88,7 +89,7 @@
 
   function orderItemEditor(order, onSaved) {
     let rows = [];
-    const body = `<p class="mpa-muted">แก้ไขชื่อ ราคา จำนวน และตัวเลือกของรายการเดิมได้ พร้อมเพิ่มรายการกำหนดเองโดยไม่ลบออเดอร์เดิม</p><div id="orderItemRows" class="mpa-grid"></div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:14px"><button type="button" class="mpa-button mpa-button-secondary" id="addOrderItem">เพิ่มรายการ</button><strong id="orderItemTotal">ยอดสินค้า ${money(0)}</strong></div><label class="mpa-field" style="margin-top:14px"><span>เหตุผลการแก้ไข</span><textarea id="orderEditReason" rows="2" required placeholder="เช่น ลูกค้าขอเปลี่ยนจำนวนสินค้า"></textarea></label><div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveOrderItems">บันทึกรายการและคำนวณยอดใหม่</button></div>`;
+    const body = `<p class="mpa-muted">แก้ไขชื่อ ราคา จำนวน และตัวเลือกของรายการเดิมได้ พร้อมเพิ่มรายการกำหนดเองโดยไม่ลบออเดอร์เดิม</p><div id="orderItemRows" class="mpa-grid"></div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:14px"><button type="button" class="mpa-button mpa-button-secondary" id="addOrderItem">เพิ่มรายการ</button><strong id="orderItemTotal">ยอดสินค้า ${money(0)}</strong></div>${override().fields('order-items', { label: 'เหตุผลการแก้ไขรายการ', financial: true })}<div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveOrderItems">บันทึกรายการและคำนวณยอดใหม่</button></div>`;
     const dialog = modal(`แก้ไขรายการออเดอร์ ${order.id}`, body, 'แก้ไขรายการออเดอร์');
     const render = () => {
       const host = dialog.backdrop.querySelector('#orderItemRows');
@@ -101,13 +102,11 @@
     const updateTotal = () => { const total = rows.reduce((sum, row) => sum + Math.max(0, Number(row.unit_price || 0)) * Math.max(0, Number(row.quantity || 0)), 0); const node = dialog.backdrop.querySelector('#orderItemTotal'); if (node) node.textContent = `ยอดสินค้า ${money(total)}`; };
     dialog.backdrop.querySelector('#addOrderItem').onclick = () => { rows.push({ id: null, order_id: order.id, item_id: null, name: '', emoji: '🍽️', unit_price: 0, quantity: 1, options: {} }); render(); };
     dialog.backdrop.querySelector('#saveOrderItems').onclick = async () => {
-      const reason = dialog.backdrop.querySelector('#orderEditReason')?.value.trim();
-      if (!reason) return notice('กรุณาระบุเหตุผลการแก้ไขก่อนบันทึก', 'error');
       if (rows.some(row => !String(row.name || '').trim() || !Number.isFinite(Number(row.unit_price)) || Number(row.unit_price) < 0 || !Number.isInteger(Number(row.quantity)) || Number(row.quantity) < 1)) return notice('กรุณากรอกชื่อ ราคา และจำนวนให้ถูกต้องทุกแถว', 'error');
-      if (!window.confirm(`ยืนยันแก้ไขรายการออเดอร์ ${order.id} และบันทึกยอดชำระใหม่หรือไม่?`)) return;
+      let decision; try { decision = await override().collect(dialog.backdrop, 'order-items', `คุณกำลังแก้ไขรายการและยอดชำระของออร์เดอร์ ${order.id}`); } catch (error) { return notice(error.message || 'ยืนยันการแก้ไขไม่สำเร็จ', 'error'); }
       const save = dialog.backdrop.querySelector('#saveOrderItems'); save.disabled = true;
       try {
-        await manageOrder(order, 'items', { items: rows.map(row => ({ id: row.id || null, item_id: row.item_id || null, name: String(row.name).trim(), emoji: String(row.emoji || '🍽️').trim(), unit_price: Number(row.unit_price), quantity: Number(row.quantity), options: row.options || {} })) }, reason);
+        await manageOrder(order, 'items', { items: rows.map(row => ({ id: row.id || null, item_id: row.item_id || null, name: String(row.name).trim(), emoji: String(row.emoji || '🍽️').trim(), unit_price: Number(row.unit_price), quantity: Number(row.quantity), options: row.options || {} })) }, decision.reason, decision.evidencePath);
         notice('บันทึกรายการออร์เดอร์และคำนวณยอดใหม่แล้ว'); dialog.close(); onSaved();
       } catch (error) { save.disabled = false; notice(`บันทึกรายการไม่สำเร็จ: ${error.message}`, 'error'); }
     };
@@ -131,21 +130,19 @@
     const payments = await request(`order_payments?select=id,method,expected_amount,captured_amount,status&order_id=eq.${encodeURIComponent(order.id)}&limit=1`);
     const payment = payments?.[0] || {};
     const evidence = cancellation.evidence && typeof cancellation.evidence === 'object' ? JSON.stringify(cancellation.evidence) : '-';
-    const body = `<dl class="admin-withdrawal-review-grid"><div><dt>ออร์เดอร์</dt><dd>${esc(order.id)}</dd></div><div><dt>ลูกค้า</dt><dd>${esc(order.customer_name || '-')}</dd></div><div><dt>ร้านค้า</dt><dd>${esc(order.store_name || '-')}</dd></div><div><dt>สถานะปัจจุบัน</dt><dd>${esc(statusLabel(order.status))}</dd></div><div><dt>วิธีชำระ</dt><dd>${esc(payment.method || '-')}</dd></div><div><dt>ยอดที่ต้องชำระ</dt><dd>${money(payment.expected_amount ?? order.payable ?? order.total)}</dd></div><div><dt>สถานะการชำระ</dt><dd>${esc(payment.status || '-')}</dd></div><div><dt>ผู้ขอ</dt><dd>${esc(cancellation.requester_role || 'customer')}</dd></div></dl><label class="mpa-field"><span>เหตุผลจากผู้ขอ</span><textarea rows="3" disabled>${esc(cancellation.reason || '-')}</textarea></label><label class="mpa-field"><span>หลักฐาน/บริบท</span><textarea rows="2" disabled>${esc(evidence)}</textarea></label><label class="mpa-field"><span>ผลพิจารณา</span><select id="cancellationDecision"><option value="approve_no_refund">อนุมัติยกเลิก (ไม่เปิดคำขอคืนเงิน)</option><option value="approve_refund_pending">อนุมัติยกเลิกและเปิดคำขอคืนเงิน</option><option value="reject">ปฏิเสธคำขอยกเลิก</option></select></label><label class="mpa-field"><span>เหตุผลผลพิจารณา</span><textarea id="cancellationReason" rows="3" required placeholder="ลูกค้าจะเห็นเหตุผลนี้ใน timeline"></textarea></label><div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveCancellationDecision">บันทึกผลพิจารณา</button></div>`;
+    const body = `<dl class="admin-withdrawal-review-grid"><div><dt>ออร์เดอร์</dt><dd>${esc(order.id)}</dd></div><div><dt>ลูกค้า</dt><dd>${esc(order.customer_name || '-')}</dd></div><div><dt>ร้านค้า</dt><dd>${esc(order.store_name || '-')}</dd></div><div><dt>สถานะปัจจุบัน</dt><dd>${esc(statusLabel(order.status))}</dd></div><div><dt>วิธีชำระ</dt><dd>${esc(payment.method || '-')}</dd></div><div><dt>ยอดที่ต้องชำระ</dt><dd>${money(payment.expected_amount ?? order.payable ?? order.total)}</dd></div><div><dt>สถานะการชำระ</dt><dd>${esc(payment.status || '-')}</dd></div><div><dt>ผู้ขอ</dt><dd>${esc(cancellation.requester_role || 'customer')}</dd></div></dl><label class="mpa-field"><span>เหตุผลจากผู้ขอ</span><textarea rows="3" disabled>${esc(cancellation.reason || '-')}</textarea></label><label class="mpa-field"><span>หลักฐาน/บริบท</span><textarea rows="2" disabled>${esc(evidence)}</textarea></label><label class="mpa-field"><span>ผลพิจารณา</span><select id="cancellationDecision"><option value="approve_no_refund">อนุมัติยกเลิก (ไม่เปิดคำขอคืนเงิน)</option><option value="approve_refund_pending">อนุมัติยกเลิกและเปิดคำขอคืนเงิน</option><option value="reject">ปฏิเสธคำขอยกเลิก</option></select></label>${override().fields('cancellation', { label: 'เหตุผลผลพิจารณา', financial: true, placeholder: 'ระบุผลที่ตรวจสอบและเหตุผลการอนุมัติหรือปฏิเสธ' })}<div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveCancellationDecision">บันทึกผลพิจารณา</button></div>`;
     const dialog = modal(`พิจารณายกเลิก · ${order.id}`, body, 'พิจารณาคำขอยกเลิกออร์เดอร์');
     dialog.backdrop.querySelector('#saveCancellationDecision').onclick = async () => {
       const choice = dialog.backdrop.querySelector('#cancellationDecision')?.value || '';
-      const reason = dialog.backdrop.querySelector('#cancellationReason')?.value.trim() || '';
-      if (reason.length < 3) return notice('กรุณาระบุเหตุผลผลพิจารณาอย่างน้อย 3 ตัวอักษร', 'error');
       const button = dialog.backdrop.querySelector('#saveCancellationDecision'); button.disabled = true;
       const decision = choice === 'reject' ? 'reject' : 'approve'; const refundDecision = choice === 'approve_refund_pending' ? 'refund_pending' : 'no_refund';
-      try { await resolveCancellation(cancellation.id, decision, reason, refundDecision); notice(refundDecision === 'refund_pending' ? 'อนุมัติยกเลิกและเปิดคำขอคืนเงินแล้ว' : (decision === 'reject' ? 'ปฏิเสธคำขอยกเลิกแล้ว' : 'อนุมัติยกเลิกแล้ว')); dialog.close(); onSaved(); }
+      try { const governance = await override().collect(dialog.backdrop, 'cancellation', `คุณกำลัง${decision === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ'}คำขอยกเลิกของออร์เดอร์ ${order.id}`); await resolveCancellation(cancellation.id, decision, governance.reason, refundDecision, governance.evidencePath); notice(refundDecision === 'refund_pending' ? 'อนุมัติยกเลิกและเปิดคำขอคืนเงินแล้ว' : (decision === 'reject' ? 'ปฏิเสธคำขอยกเลิกแล้ว' : 'อนุมัติยกเลิกแล้ว')); dialog.close(); onSaved(); }
       catch (error) { button.disabled = false; notice(`บันทึกผลพิจารณาไม่สำเร็จ: ${error.message}`, 'error'); }
     };
   }
 
   function riderAssignment(order, onSaved) {
-    const body = `<label class="mpa-field"><span>เลือก Rider</span><select id="riderSelect"><option value="">กำลังโหลด Rider…</option></select></label><label class="mpa-field"><span>เหตุผลหรือหมายเหตุ</span><textarea id="riderReason" rows="2" placeholder="เช่น มอบหมายตามพื้นที่รับงาน"></textarea></label><div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveRider">บันทึกการมอบหมาย</button></div>`;
+    const body = `<label class="mpa-field"><span>เลือก Rider</span><select id="riderSelect"><option value="">กำลังโหลด Rider…</option></select></label>${override().fields('rider-assignment', { label: 'เหตุผลการมอบหมายหรือยกเลิก Rider', placeholder: 'เช่น รถเดิมขัดข้องและ Rider คนใหม่อยู่ใกล้จุดรับ' })}<div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveRider">บันทึกการมอบหมาย</button></div>`;
     const dialog = modal(`มอบหมาย Rider · ${order.id}`, body, 'มอบหมาย Rider');
     const select = dialog.backdrop.querySelector('#riderSelect');
     fetchRiders().then(rows => {
@@ -154,9 +151,9 @@
       select.innerHTML = `<option value="">ยังไม่มอบหมาย</option>${available.map(row => `<option value="${esc(row.id)}" ${row.id === order.rider_id ? 'selected' : ''}>${esc(row.name || row.phone || row.id)} · ${esc(row.status || (row.ride_available ? 'พร้อมรับงาน' : 'ไม่ระบุ'))}</option>`).join('')}`;
     }).catch(error => { if (select) select.innerHTML = `<option value="">โหลด Rider ไม่สำเร็จ</option>`; notice(error.message, 'error'); });
     dialog.backdrop.querySelector('#saveRider').onclick = async () => {
-      const riderId = select?.value || null; const reason = dialog.backdrop.querySelector('#riderReason')?.value.trim() || 'มอบหมาย Rider โดย Admin'; const row = (await fetchRiders()).find(item => item.id === riderId);
+      const riderId = select?.value || null; const row = (await fetchRiders()).find(item => item.id === riderId);
       const save = dialog.backdrop.querySelector('#saveRider'); save.disabled = true;
-      try { await manageOrder(order, 'assign_rider', { rider_id: riderId }, reason); notice(riderId ? `มอบหมายงานให้ ${row?.name || 'Rider'} แล้ว` : 'ยกเลิกการมอบหมาย Rider แล้ว'); dialog.close(); onSaved(); } catch (error) { save.disabled = false; notice(`บันทึก Rider ไม่สำเร็จ: ${error.message}`, 'error'); }
+      try { const governance = await override().collect(dialog.backdrop, 'rider-assignment', `คุณกำลัง${riderId ? `มอบหมายงานให้ ${row?.name || 'Rider'}` : 'ยกเลิกการมอบหมาย Rider'} สำหรับออร์เดอร์ ${order.id}`); await manageOrder(order, 'assign_rider', { rider_id: riderId }, governance.reason, governance.evidencePath); notice(riderId ? `มอบหมายงานให้ ${row?.name || 'Rider'} แล้ว` : 'ยกเลิกการมอบหมาย Rider แล้ว'); dialog.close(); onSaved(); } catch (error) { save.disabled = false; notice(`บันทึก Rider ไม่สำเร็จ: ${error.message}`, 'error'); }
     };
   }
 
@@ -166,17 +163,17 @@
     if (!C?.order?.canTransition || !C?.contracts?.orderStatus) return notice('Shared Core สำหรับเปลี่ยนสถานะยังโหลดไม่พร้อม กรุณารีเฟรชหน้าแล้วลองใหม่', 'error');
     const candidates = Object.values(C.contracts.orderStatus).filter(status => C.order.canTransition({ from: order.status, to: status, actor: 'admin' }).ok);
     if (!candidates.length) return notice('ออเดอร์นี้อยู่ในสถานะปลายทางแล้ว หรือไม่มีสถานะถัดไปที่อนุญาต', 'error');
-    const body = `<p class="mpa-muted">ระบบจะแสดงเฉพาะสถานะถัดไปที่ Shared Core อนุญาต จึงไม่สร้าง transition ใหม่หรือข้ามขั้นตอน</p><label class="mpa-field"><span>สถานะปัจจุบัน</span><input value="${esc(statusLabel(order.status))}" disabled></label><label class="mpa-field"><span>เปลี่ยนเป็น</span><select id="nextOrderStatus"><option value="">เลือกสถานะ…</option>${candidates.map(status => `<option value="${esc(status)}">${esc(statusLabel(status))}</option>`).join('')}</select></label><label class="mpa-field"><span>เหตุผลหรือหมายเหตุ</span><textarea id="orderStatusReason" rows="2" placeholder="เช่น ตรวจสอบสลิปเรียบร้อยแล้ว"></textarea></label><div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveOrderStatus">บันทึกสถานะ</button></div>`;
+    const body = `<p class="mpa-muted">ระบบจะแสดงเฉพาะสถานะถัดไปที่ Shared Core อนุญาต จึงไม่สร้าง transition ใหม่หรือข้ามขั้นตอน</p><label class="mpa-field"><span>สถานะปัจจุบัน</span><input value="${esc(statusLabel(order.status))}" disabled></label><label class="mpa-field"><span>เปลี่ยนเป็น</span><select id="nextOrderStatus"><option value="">เลือกสถานะ…</option>${candidates.map(status => `<option value="${esc(status)}">${esc(statusLabel(status))}</option>`).join('')}</select></label>${override().fields('order-status', { label: 'เหตุผลการเปลี่ยนสถานะ', placeholder: 'เช่น ตรวจหลักฐานและยืนยันสถานะจากร้านแล้ว' })}<div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>ยกเลิก</button><button type="button" class="mpa-button" id="saveOrderStatus">บันทึกสถานะ</button></div>`;
     const dialog = modal(`เปลี่ยนสถานะ · ${order.id}`, body, 'เปลี่ยนสถานะออเดอร์');
     dialog.backdrop.querySelector('#saveOrderStatus').onclick = async () => {
       const nextStatus = dialog.backdrop.querySelector('#nextOrderStatus')?.value;
       if (!nextStatus) return notice('กรุณาเลือกสถานะถัดไป', 'error');
       const check = C.order.canTransition({ from: order.status, to: nextStatus, actor: 'admin' });
       if (!check.ok) return notice(check.reason, 'error');
-      const reason = dialog.backdrop.querySelector('#orderStatusReason')?.value.trim() || 'เปลี่ยนสถานะโดย Admin';
       const save = dialog.backdrop.querySelector('#saveOrderStatus'); save.disabled = true;
       try {
-        await manageOrder(order, 'status', { status: nextStatus }, reason);
+        const governance = await override().collect(dialog.backdrop, 'order-status', `คุณกำลังเปลี่ยนสถานะออร์เดอร์ ${order.id} เป็น ${statusLabel(nextStatus)}`);
+        await manageOrder(order, 'status', { status: nextStatus }, governance.reason, governance.evidencePath);
         notice('บันทึกสถานะออเดอร์แล้ว'); dialog.close(); onSaved();
       } catch (error) { save.disabled = false; notice(`บันทึกสถานะไม่สำเร็จ: ${error.message}`, 'error'); }
     };

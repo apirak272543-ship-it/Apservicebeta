@@ -18,9 +18,9 @@ assert.match(admin, /href="stores\.html"/, 'บัญชีร้านค้า
 assert.match(admin, /href="riders\.html"/, 'บัญชี Rider ต้องเชื่อมไปยัง Rider Control Plane');
 assert.match(accounts, /data-page="accounts"/, 'Accounts route ต้องคงเป็น MPA route เดิม');
 assert.match(accounts, /admin-accounts\.css\?v=accounts-v1/, 'Accounts route ต้องโหลด style เมนูรองเฉพาะหน้า');
-assert.match(accounts, /admin-app\.js\?v=admin-management-v6/, 'Accounts route ต้อง cache-bust runtime ใหม่');
+assert.match(accounts, /admin-app\.js\?v=admin-management-v8/, 'Accounts route ต้อง cache-bust runtime Governance ใหม่');
 assert.match(profile, /data-page="accounts"/, 'profile route เดิมต้องเปิด Account Control Plane แทนหน้า 404');
-assert.match(profile, /admin-app\.js\?v=admin-management-v6/, 'profile route ต้องโหลด runtime จัดการบัญชีเวอร์ชันเดียวกับ Accounts');
+assert.match(profile, /admin-app\.js\?v=admin-management-v8/, 'profile route ต้องโหลด runtime Governance เวอร์ชันเดียวกับ Accounts');
 assert.match(styles, /\.admin-account-type-menu/, 'ต้องมี responsive style ของเมนูประเภทบัญชี');
 assert.match(styles, /@media\(max-width:760px\)/, 'Accounts sub-menu ต้องรองรับหน้าจอมือถือ');
 
