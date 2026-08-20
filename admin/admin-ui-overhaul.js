@@ -161,7 +161,12 @@
   document.addEventListener('keydown', handleGlobal);
   document.addEventListener('input', handleGlobal);
   document.addEventListener('change', handleGlobal);
-  document.addEventListener('click', event => { if (!event.target.closest('.admin-color-panel, .admin-color-trigger')) toggleColorPanel(false); });
+  document.addEventListener('click', event => {
+    const swatch = event.target.closest('[data-admin-color-swatch]');
+    if (swatch) { applyAccent(swatch.dataset.adminColorSwatch); return; }
+    if (event.target.closest('[data-admin-color-reset]')) { applyAccent('#c83f5b'); return; }
+    if (!event.target.closest('.admin-color-panel, .admin-color-trigger')) toggleColorPanel(false);
+  });
   const observer = new MutationObserver(() => { clearTimeout(observer.__timer); observer.__timer = setTimeout(enhance, 80); });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreAccent();
