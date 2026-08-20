@@ -9,6 +9,7 @@ assert.match(control, /status=eq\.under_review/, 'ต้องแสดงเฉ
 assert.match(control, /rpc\/admin_review_checkout_group_payment/, 'ต้องตัดสินผ่าน server RPC');
 assert.match(control, /p_idempotency_key/, 'การตัดสินต้องมี idempotency key');
 assert.match(control, /mpa-modal-backdrop/, 'การตัดสินต้องเปิดเป็น action sheet');
-assert.match(control, /reason\.length < 3/, 'ต้องบังคับเหตุผลให้เพียงพอ');
+assert.match(control, /APServiceAdminOverride\.collect/, 'ต้องรวบรวมเหตุผลและหลักฐานผ่าน governance control ก่อนบันทึกผล');
+assert.match(control, /p_reason: governance\.reason/, 'ต้องส่งเหตุผลที่ผ่าน governance control ไปยัง server RPC');
 assert.doesNotMatch(control, /delivery_orders\?id=eq.*method: 'PATCH'/, 'ห้ามแก้ payment status ผ่าน client direct patch');
 console.log('admin checkout group payment control contract: PASS');

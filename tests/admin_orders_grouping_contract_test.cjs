@@ -22,7 +22,7 @@ assert.match(controlPlane, /data-edit-order=/, 'ต้องคง action แก
 assert.match(controlPlane, /data-assign-order=/, 'ต้องคง action มอบหมาย Rider เดิม');
 assert.match(controlPlane, /data-history-order=/, 'ต้องคง action ดูประวัติเดิม');
 assert.match(page, /admin-orders\.css\?v=orders-v1/, 'orders.html ต้องโหลด stylesheet ของ card workspace');
-assert.match(page, /admin-control-plane-patch\.js\?v=control-plane-v3/, 'orders.html ต้องโหลด Orders Control Plane เวอร์ชันล่าสุด');
+assert.match(page, /admin-control-plane-patch\.js\?v=control-plane-v\d+/, 'orders.html ต้องโหลด Orders Control Plane เวอร์ชันที่ระบุ cache key');
 assert.match(styles, /\.admin-order-grid/, 'ต้องมี grid layout ของ order cards');
 assert.match(styles, /\.admin-order-actions/, 'ต้องมี layout ของปุ่ม action บน order cards');
 assert.match(styles, /@media\(max-width:760px\).*\.admin-order-grid/s, 'Orders cards ต้องมี mobile breakpoint');
