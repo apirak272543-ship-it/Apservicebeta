@@ -1,0 +1,210 @@
+/* AP Service Admin application themes: light, comfort, dark. */
+:root {
+  --theme-canvas: #f4f6fa;
+  --theme-surface: #ffffff;
+  --theme-surface-2: #eef2f7;
+  --theme-ink: #1e2733;
+  --theme-muted: #697586;
+  --theme-line: #dfe5ed;
+  --theme-action: #3159c9;
+  --theme-action-soft: #edf2ff;
+  --theme-on-action: #ffffff;
+  --theme-danger: #b84f5c;
+  --social-bg: var(--theme-canvas);
+  --social-surface: var(--theme-surface);
+  --social-ink: var(--theme-ink);
+  --social-muted: var(--theme-muted);
+  --social-line: var(--theme-line);
+  --social-action: var(--theme-action);
+  --social-action-soft: var(--theme-action-soft);
+  --social-ap: var(--theme-danger);
+}
+html[data-admin-theme="comfort"] {
+  --theme-canvas: #ebe8e1;
+  --theme-surface: #f7f4ee;
+  --theme-surface-2: #e3dfd7;
+  --theme-ink: #302f2b;
+  --theme-muted: #706f69;
+  --theme-line: #d5d0c7;
+  --theme-action: #3f696a;
+  --theme-action-soft: #e1ecea;
+  --theme-on-action: #ffffff;
+  --theme-danger: #9d5860;
+}
+html[data-admin-theme="dark"] {
+  --theme-canvas: #15191f;
+  --theme-surface: #20252d;
+  --theme-surface-2: #2a3039;
+  --theme-ink: #edf0f4;
+  --theme-muted: #abb4c1;
+  --theme-line: #3b4451;
+  --theme-action: #91aaf5;
+  --theme-action-soft: #2a3550;
+  --theme-on-action: #101522;
+  --theme-danger: #e18b93;
+}
+
+html[data-admin-theme] {
+  --ap-canvas: var(--theme-canvas);
+  --ap-paper: var(--theme-surface);
+  --ap-ink: var(--theme-ink);
+  --ap-muted: var(--theme-muted);
+  --ap-line: var(--theme-line);
+  --ap-brand: var(--theme-action);
+  --ap-brand-deep: var(--theme-ink);
+  --ap-brand-soft: var(--theme-action-soft);
+  --ap-danger: var(--theme-danger);
+}
+html[data-admin-theme] body {
+  background: var(--theme-canvas);
+  color: var(--theme-ink);
+}
+html[data-admin-theme] .mpa-topbar,
+html[data-admin-theme] .admin-topbar {
+  background: var(--theme-surface);
+  border-color: var(--theme-line);
+}
+html[data-admin-theme] .mpa-card,
+html[data-admin-theme] .admin-dashboard-section,
+html[data-admin-theme] .admin-dashboard-attention,
+html[data-admin-theme] .admin-form-section,
+html[data-admin-theme] .admin-orders-workspace,
+html[data-admin-theme] .admin-media-column {
+  background: var(--theme-surface);
+  border-color: var(--theme-line);
+  color: var(--theme-ink);
+}
+html[data-admin-theme] .mpa-button {
+  background: var(--theme-action);
+  color: var(--theme-on-action);
+}
+html[data-admin-theme] .mpa-button:hover { filter: brightness(.94); }
+html[data-admin-theme] .mpa-button-secondary {
+  background: var(--theme-action-soft);
+  color: var(--theme-action);
+  border-color: var(--theme-line);
+}
+html[data-admin-theme] .mpa-field input,
+html[data-admin-theme] .mpa-field select,
+html[data-admin-theme] .mpa-field textarea {
+  background: var(--theme-surface);
+  color: var(--theme-ink);
+  border-color: var(--theme-line);
+}
+html[data-admin-theme] .mpa-table th { background: var(--theme-surface-2); color: var(--theme-muted); }
+html[data-admin-theme] .mpa-table th,
+html[data-admin-theme] .mpa-table td,
+html[data-admin-theme] .mpa-table-wrap { border-color: var(--theme-line); }
+html[data-admin-theme] .mpa-muted,
+html[data-admin-theme] .mpa-page-head p,
+html[data-admin-theme] .admin-section-heading p:not(.admin-section-kicker) { color: var(--theme-muted); }
+html[data-admin-theme] .admin-nav-link,
+html[data-admin-theme] .admin-nav-more summary { color: var(--theme-muted); }
+html[data-admin-theme] .admin-nav-link.active,
+html[data-admin-theme] .admin-nav-link:hover,
+html[data-admin-theme] .admin-nav-more summary:hover { color: var(--theme-action); background: var(--theme-action-soft); }
+
+/* Dashboard uses the same tokens instead of a separate bright palette. */
+html[data-admin-theme] body[data-page="dashboard"] .mpa-page-head {
+  background: var(--theme-surface);
+  border-color: var(--theme-line);
+  box-shadow: 0 8px 22px rgba(30, 39, 51, .07);
+}
+html[data-admin-theme] body[data-page="dashboard"] .mpa-page-head h1,
+html[data-admin-theme] body[data-page="dashboard"] .admin-section-heading h2,
+html[data-admin-theme] body[data-page="dashboard"] .admin-dashboard-attention > h2 { color: var(--theme-ink); }
+html[data-admin-theme] body[data-page="dashboard"] .admin-status-chip,
+html[data-admin-theme] body[data-page="dashboard"] .admin-finance-card,
+html[data-admin-theme] body[data-page="dashboard"] #stats .admin-stat-link,
+html[data-admin-theme] body[data-page="dashboard"] .admin-quick-action {
+  background: var(--theme-surface);
+  border-color: var(--theme-line);
+  color: var(--theme-ink);
+}
+html[data-admin-theme] body[data-page="dashboard"] .admin-status-chip span,
+html[data-admin-theme] body[data-page="dashboard"] .admin-finance-card-label,
+html[data-admin-theme] body[data-page="dashboard"] .admin-finance-card-caption,
+html[data-admin-theme] body[data-page="dashboard"] #stats .admin-stat-link small { color: var(--theme-muted); }
+html[data-admin-theme] body[data-page="dashboard"] .admin-finance-card-value,
+html[data-admin-theme] body[data-page="dashboard"] #stats .admin-stat-link strong { color: var(--theme-ink); }
+html[data-admin-theme] body[data-page="dashboard"] #pending p { background: var(--theme-surface-2); border-color: var(--theme-line); color: var(--theme-muted); }
+html[data-admin-theme] body[data-page="dashboard"] .admin-dashboard-feed { border-left-color: var(--theme-action); }
+html[data-admin-theme] body[data-page="dashboard"] .admin-page-eyebrow,
+html[data-admin-theme] body[data-page="dashboard"] .admin-section-kicker { color: var(--theme-action); }
+html[data-admin-theme] body[data-page="dashboard"] .admin-dashboard-shortcuts summary,
+html[data-admin-theme] body[data-page="dashboard"] #pending p a,
+html[data-admin-theme] body[data-page="dashboard"] .admin-finance-card span,
+html[data-admin-theme] body[data-page="dashboard"] #stats .admin-stat-link span { color: var(--theme-action); }
+
+/* Theme picker in Settings. */
+.admin-theme-settings-card {
+  margin: 0 0 16px;
+  padding: 18px;
+  border: 1px solid var(--theme-line);
+  border-radius: 20px;
+  background: var(--theme-surface);
+  color: var(--theme-ink);
+  box-shadow: 0 8px 22px rgba(30,39,51,.06);
+}
+.admin-theme-settings-head h2 { margin: 0; color: var(--theme-ink); font-size: 20px; }
+.admin-theme-settings-head p:not(.admin-section-kicker) { margin: 5px 0 0; color: var(--theme-muted); font-size: 12px; line-height: 1.6; }
+.admin-theme-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.admin-theme-option {
+  display: grid;
+  grid-template-columns: 42px minmax(0,1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 76px;
+  padding: 11px;
+  border: 1px solid var(--theme-line);
+  border-radius: 15px;
+  background: var(--theme-surface-2);
+  color: var(--theme-ink);
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.admin-theme-option:hover { transform: translateY(-1px); box-shadow: 0 7px 16px rgba(30,39,51,.08); }
+.admin-theme-option.is-active { border-color: var(--theme-action); box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-action) 18%, transparent); }
+.admin-theme-option input { position: absolute; opacity: 0; pointer-events: none; }
+.admin-theme-swatch { width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--theme-line); box-shadow: inset 0 0 0 5px rgba(255,255,255,.25); }
+.admin-theme-swatch-light { background: linear-gradient(135deg, #ffffff 0 52%, #3159c9 53% 67%, #e8edf5 68%); }
+.admin-theme-swatch-comfort { background: linear-gradient(135deg, #f7f4ee 0 52%, #3f696a 53% 67%, #ebe8e1 68%); }
+.admin-theme-swatch-dark { background: linear-gradient(135deg, #20252d 0 52%, #91aaf5 53% 67%, #15191f 68%); }
+.admin-theme-option-copy { display: grid; gap: 3px; min-width: 0; }
+.admin-theme-option-copy b { font-size: 13px; }
+.admin-theme-option-copy small { color: var(--theme-muted); font-size: 10px; line-height: 1.45; }
+
+html[data-admin-theme="dark"] .admin-theme-option,
+html[data-admin-theme="dark"] .admin-theme-settings-card { box-shadow: 0 8px 22px rgba(0,0,0,.18); }
+html[data-admin-theme="dark"] .admin-brand b,
+html[data-admin-theme="dark"] .admin-brand small { color: var(--theme-ink); }
+
+@media (max-width: 760px) {
+  .admin-theme-options { grid-template-columns: 1fr; }
+  .admin-theme-option { min-height: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-theme-option { transition: none; }
+}
+
+
+/* Remove legacy pink/orange accents when an application theme is active. */
+html[data-admin-theme] .admin-page-eyebrow,
+html[data-admin-theme] .admin-section-kicker,
+html[data-admin-theme] .admin-brand b,
+html[data-admin-theme] .admin-brand small,
+html[data-admin-theme] .mpa-page-head h1,
+html[data-admin-theme] .mpa-page-head h2,
+html[data-admin-theme] .admin-section-heading h2,
+html[data-admin-theme] .admin-dashboard-attention h2 {
+  color: var(--theme-ink);
+}
+html[data-admin-theme] .admin-page-eyebrow,
+html[data-admin-theme] .admin-section-kicker { color: var(--theme-action); }
+html[data-admin-theme] .mpa-page-head::after { border-color: color-mix(in srgb, var(--theme-action) 10%, transparent); }
+html[data-admin-theme] .admin-finance-card::after { border-color: color-mix(in srgb, var(--theme-action) 10%, transparent); }
+html[data-admin-theme] .admin-login-intro h1,
+html[data-admin-theme] .admin-login-card .mpa-field label { color: var(--theme-ink); }
+html[data-admin-theme] .admin-login-card { background: var(--theme-surface); border-color: var(--theme-line); }
+html[data-admin-theme] .admin-login-card .mpa-field input { background: var(--theme-surface); color: var(--theme-ink); border-color: var(--theme-line); }
+html[data-admin-theme] .admin-login-help { color: var(--theme-muted); }
