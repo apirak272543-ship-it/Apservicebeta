@@ -87,3 +87,151 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .admin-nav-link,.admin-account-link,.admin-nav-more summary,.admin-finance-card,.admin-quick-action,.mpa-button { transition: none; }
 }
+
+
+/* Admin friendly UX refinement v2 — visual-only, additive, and scoped to Admin. */
+:root {
+  --admin-focus: #1b7f73;
+  --admin-surface-soft: #fffafb;
+  --admin-surface-strong: #ffffff;
+  --admin-success: #2c8a67;
+  --admin-warning: #b7791f;
+  --admin-danger: #b23a4a;
+}
+
+html { scroll-behavior: smooth; }
+body { letter-spacing: -0.005em; }
+::selection { background: #f7cbd3; color: #5c1b2c; }
+
+.admin-topbar {
+  border-bottom: 1px solid rgba(240, 216, 223, .92);
+  box-shadow: 0 8px 24px rgba(94, 31, 47, .06);
+}
+.admin-topbar-inner { min-height: 72px; }
+.admin-brand { min-width: 174px; }
+.admin-brand-mark { width: 40px; height: 40px; border-radius: 13px; }
+.admin-brand b { font-size: 15px; letter-spacing: -.02em; }
+.admin-brand small { font-size: 10px; letter-spacing: .01em; }
+.admin-nav-primary { align-items: center; }
+.admin-nav-link, .admin-nav-more summary {
+  min-height: 40px;
+  padding-inline: 11px;
+  border: 1px solid transparent;
+}
+.admin-nav-link:hover, .admin-nav-more summary:hover {
+  border-color: #f2c8d1;
+  box-shadow: 0 5px 14px rgba(180, 55, 78, .08);
+}
+.admin-nav-link.active {
+  border-color: #efb6c1;
+  font-weight: 950;
+}
+.admin-nav-group p { text-transform: none; }
+
+.mpa-shell { padding-top: 30px; }
+.mpa-page-head {
+  position: relative;
+  padding: 24px 26px;
+  margin-bottom: 20px;
+  border: 1px solid #f0dce1;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,246,248,.92));
+  box-shadow: 0 12px 28px rgba(143, 38, 58, .055);
+  overflow: hidden;
+}
+.mpa-page-head::after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  right: -56px;
+  top: -76px;
+  border: 28px solid rgba(217, 74, 93, .08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.mpa-page-head > * { position: relative; z-index: 1; }
+.mpa-page-head h1, .mpa-page-head h2 { letter-spacing: -.025em; }
+.mpa-page-head p { max-width: 720px; }
+
+.admin-dashboard-section, .admin-dashboard-attention {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.admin-dashboard-section:hover, .admin-dashboard-attention:hover {
+  border-color: #e9bac5;
+  box-shadow: 0 16px 34px rgba(143, 38, 58, .075);
+}
+.admin-section-heading { gap: 18px; }
+.admin-section-heading p { line-height: 1.65; }
+.admin-finance-card, .admin-stat-link, .admin-quick-action {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+.admin-finance-card:focus-visible, .admin-stat-link:focus-visible, .admin-quick-action:focus-visible,
+.admin-nav-link:focus-visible, .admin-nav-more summary:focus-visible, .mpa-button:focus-visible,
+.mpa-field input:focus-visible, .mpa-field select:focus-visible, .mpa-field textarea:focus-visible {
+  outline: 3px solid rgba(27, 127, 115, .34);
+  outline-offset: 3px;
+}
+.admin-finance-card:hover, .admin-stat-link:hover, .admin-quick-action:hover {
+  transform: translateY(-3px);
+}
+.admin-stat-link strong { font-size: clamp(26px, 3vw, 34px); letter-spacing: -.04em; }
+.admin-stat-link span { color: #a92f46; }
+.admin-dashboard-attention { padding: 24px; }
+.admin-dashboard-attention h2 { margin-top: 0; letter-spacing: -.02em; }
+.admin-dashboard-shortcuts summary { padding: 10px 0; font-weight: 950; cursor: pointer; }
+.admin-dashboard-shortcuts summary::marker { color: #c63e54; }
+
+.mpa-table-wrap { box-shadow: 0 8px 20px rgba(85, 32, 48, .045); }
+.mpa-table tbody tr { transition: background .16s ease; }
+.mpa-table tbody tr:hover { background: #fff8f9; }
+.mpa-table th { letter-spacing: .02em; text-transform: none; }
+.mpa-badge { border: 1px solid #f0cbd3; }
+.mpa-button { box-shadow: 0 7px 15px rgba(180, 55, 78, .14); transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.mpa-button:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(180, 55, 78, .18); }
+.mpa-button-secondary { box-shadow: none; }
+
+@media (max-width: 760px) {
+  .admin-topbar-inner { min-height: 64px; }
+  .admin-brand { min-width: auto; }
+  .mpa-shell { padding-top: 16px; }
+  .mpa-page-head { padding: 19px 17px; border-radius: 19px; }
+  .mpa-page-head h1 { font-size: 20px; line-height: 1.3; }
+  .mpa-page-head .mpa-button { width: 100%; margin-top: 8px; }
+  .admin-section-heading { align-items: flex-start; flex-direction: column; }
+  .admin-section-heading .mpa-button { width: 100%; }
+  .admin-dashboard-attention { padding: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .admin-dashboard-section, .admin-dashboard-attention, .admin-finance-card, .admin-stat-link,
+  .admin-quick-action, .mpa-button, .mpa-table tbody tr { transition: none; }
+}
+
+
+.admin-login-card {
+  padding: clamp(24px, 5vw, 38px);
+  box-shadow: 0 22px 55px rgba(143, 38, 58, .12);
+}
+.admin-login-brand {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f17a87, #d94a5d 58%, #aa2841);
+  color: #fff;
+  font-weight: 950;
+  letter-spacing: .04em;
+  box-shadow: 0 12px 24px rgba(217, 74, 93, .24);
+}
+.admin-login-intro { text-align: center; margin-bottom: 26px; }
+.admin-login-intro h1 { margin: 0; color: #752239; font-size: 25px; letter-spacing: -.03em; }
+.admin-login-intro p:last-child { margin: 8px auto 0; max-width: 340px; color: #78656c; font-size: 13px; line-height: 1.6; }
+.admin-login-card .mpa-field { gap: 8px; margin-bottom: 16px; }
+.admin-login-card .mpa-field label { color: #752239; font-size: 12px; }
+.admin-login-card .mpa-field input { min-height: 47px; border-radius: 13px; padding-inline: 14px; background: #fff; }
+.admin-login-card .mpa-field input::placeholder { color: #b9a4aa; }
+.admin-login-help { margin: 14px 0 0; color: #9a7d85; font-size: 11px; line-height: 1.55; text-align: center; }
