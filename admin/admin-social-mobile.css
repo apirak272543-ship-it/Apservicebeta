@@ -1,0 +1,474 @@
+/* AP Service Admin — Social Admin Console, mobile-first. */
+:root {
+  --social-bg: #f3f6fb;
+  --social-surface: #ffffff;
+  --social-ink: #172033;
+  --social-muted: #68758a;
+  --social-line: #e1e7f0;
+  --social-action: #3159c9;
+  --social-action-soft: #edf2ff;
+  --social-ap: #a92f46;
+  --social-ap-soft: #fff0f3;
+  --social-shadow: 0 8px 24px rgba(35, 48, 76, .07);
+  --social-shadow-strong: 0 14px 30px rgba(35, 48, 76, .12);
+  --social-radius: 20px;
+}
+
+body[data-page="dashboard"] {
+  background: var(--social-bg);
+  color: var(--social-ink);
+}
+body[data-page="dashboard"] .admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-height: 66px;
+  background: rgba(255,255,255,.94);
+  border-bottom: 1px solid var(--social-line);
+  box-shadow: 0 2px 12px rgba(35,48,76,.04);
+  backdrop-filter: blur(16px);
+}
+body[data-page="dashboard"] .admin-topbar-inner {
+  min-height: 66px;
+  max-width: 1240px;
+  padding-inline: 14px;
+}
+body[data-page="dashboard"] .admin-brand {
+  min-width: 0;
+  gap: 9px;
+}
+body[data-page="dashboard"] .admin-brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  border: 1px solid #f1d1d8;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(169,47,70,.12);
+}
+body[data-page="dashboard"] .admin-brand b {
+  color: var(--social-ink);
+  font-size: 15px;
+}
+body[data-page="dashboard"] .admin-brand small { color: var(--social-muted); }
+body[data-page="dashboard"] .admin-nav-link,
+body[data-page="dashboard"] .admin-nav-more summary {
+  color: var(--social-muted);
+  border-radius: 13px;
+}
+body[data-page="dashboard"] .admin-nav-link.active {
+  color: var(--social-action);
+  background: var(--social-action-soft);
+  box-shadow: none;
+}
+body[data-page="dashboard"] .admin-nav-link:hover,
+body[data-page="dashboard"] .admin-nav-more summary:hover {
+  color: var(--social-action);
+  background: #f4f6ff;
+  transform: none;
+}
+
+body[data-page="dashboard"] .mpa-shell {
+  width: min(100%, 780px);
+  padding: 14px 14px 104px;
+  margin: 0 auto;
+}
+body[data-page="dashboard"] .mpa-page-head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 15px;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid #dfe6f0;
+  border-radius: var(--social-radius);
+  background: linear-gradient(145deg, #fff 0%, #f5f8ff 100%);
+  box-shadow: var(--social-shadow);
+}
+body[data-page="dashboard"] .mpa-page-head::after {
+  width: 180px;
+  height: 180px;
+  right: -76px;
+  top: -104px;
+  border: 30px solid rgba(49,89,201,.08);
+}
+body[data-page="dashboard"] .admin-dashboard-hero-copy { min-width: 0; }
+body[data-page="dashboard"] .admin-page-eyebrow {
+  margin-bottom: 7px;
+  color: var(--social-action);
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+body[data-page="dashboard"] .mpa-page-head h1 {
+  max-width: none;
+  margin: 0;
+  color: var(--social-ink);
+  font-size: clamp(27px, 8vw, 34px);
+  line-height: 1.18;
+  letter-spacing: -.045em;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+body[data-page="dashboard"] .mpa-page-head p:not(.admin-page-eyebrow) {
+  max-width: none;
+  margin: 8px 0 0;
+  color: var(--social-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+body[data-page="dashboard"] .mpa-page-head .mpa-button {
+  width: 100%;
+  min-height: 46px;
+  margin: 0;
+  border-color: #cad5ee;
+  background: #fff;
+  color: var(--social-action);
+  box-shadow: none;
+}
+body[data-page="dashboard"] .mpa-page-head .mpa-button:hover {
+  background: var(--social-action-soft);
+  border-color: #aebde8;
+}
+
+/* Social-style status strip: quick context, not a replacement for data or routes. */
+body[data-page="dashboard"] .admin-dashboard-status-strip {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  margin: 0 -2px 12px;
+  padding: 2px 2px 7px;
+  scrollbar-width: none;
+}
+body[data-page="dashboard"] .admin-dashboard-status-strip::-webkit-scrollbar { display: none; }
+body[data-page="dashboard"] .admin-status-chip {
+  display: grid;
+  flex: 0 0 142px;
+  gap: 4px;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid var(--social-line);
+  border-radius: 16px;
+  background: var(--social-surface);
+  box-shadow: 0 4px 12px rgba(35,48,76,.045);
+  color: var(--social-ink);
+  text-decoration: none;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+body[data-page="dashboard"] .admin-status-chip:hover { transform: translateY(-2px); border-color: #bfccef; box-shadow: var(--social-shadow); }
+body[data-page="dashboard"] .admin-status-chip:active { transform: scale(.985); }
+body[data-page="dashboard"] .admin-status-chip strong { font-size: 13px; }
+body[data-page="dashboard"] .admin-status-chip span { color: var(--social-muted); font-size: 11px; }
+body[data-page="dashboard"] .admin-status-chip:nth-child(2) strong { color: #a26816; }
+body[data-page="dashboard"] .admin-status-chip:nth-child(3) strong { color: #187a58; }
+body[data-page="dashboard"] .admin-status-chip:nth-child(4) strong { color: var(--social-ap); }
+
+body[data-page="dashboard"] .admin-dashboard-section,
+body[data-page="dashboard"] .admin-dashboard-attention {
+  margin: 0 0 12px;
+  padding: 18px;
+  border: 1px solid var(--social-line);
+  border-radius: var(--social-radius);
+  background: var(--social-surface);
+  box-shadow: var(--social-shadow);
+}
+body[data-page="dashboard"] .admin-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 14px;
+  border: 0;
+}
+body[data-page="dashboard"] .admin-section-heading > div { min-width: 0; flex: 1; }
+body[data-page="dashboard"] .admin-section-heading h2,
+body[data-page="dashboard"] .admin-dashboard-attention > h2 {
+  margin: 0;
+  color: var(--social-ink);
+  font-size: 19px;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+}
+body[data-page="dashboard"] .admin-section-heading p:not(.admin-section-kicker) {
+  margin: 5px 0 0;
+  color: var(--social-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+body[data-page="dashboard"] .admin-section-heading .mpa-button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  color: var(--social-action);
+  background: var(--social-action-soft);
+  border-color: transparent;
+  font-size: 11px;
+}
+
+body[data-page="dashboard"] .admin-dashboard-feed {
+  border-left: 3px solid var(--social-action);
+  padding-left: 15px;
+}
+body[data-page="dashboard"] .admin-dashboard-feed .admin-section-kicker { color: var(--social-action); }
+body[data-page="dashboard"] #pending {
+  min-height: 0;
+  display: block;
+}
+body[data-page="dashboard"] #pending p {
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid #e4e9f2;
+  border-radius: 14px;
+  background: #f8faff;
+  color: var(--social-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+body[data-page="dashboard"] #pending p a { color: var(--social-action); font-weight: 850; }
+
+body[data-page="dashboard"] .admin-finance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  overflow: visible;
+  padding: 0;
+}
+body[data-page="dashboard"] .admin-finance-card {
+  min-height: 128px;
+  padding: 14px;
+  border: 1px solid var(--social-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: none;
+  color: var(--social-ink);
+}
+body[data-page="dashboard"] .admin-finance-card:hover { transform: translateY(-2px); border-color: #bdccef; box-shadow: var(--social-shadow); }
+body[data-page="dashboard"] .admin-finance-card::after { opacity: .6; }
+body[data-page="dashboard"] .admin-finance-card small { color: var(--social-muted); font-size: 10px; line-height: 1.4; }
+body[data-page="dashboard"] .admin-finance-card strong { color: var(--social-ink); font-size: 22px; line-height: 1.15; }
+body[data-page="dashboard"] .admin-finance-card span { color: var(--social-action); font-size: 11px; }
+body[data-page="dashboard"] .admin-finance-card:nth-child(1) { border-top: 3px solid #d94a5d; }
+body[data-page="dashboard"] .admin-finance-card:nth-child(2) { border-top: 3px solid #d89124; }
+body[data-page="dashboard"] .admin-finance-card:nth-child(3) { border-top: 3px solid #6b55bd; }
+body[data-page="dashboard"] .admin-finance-card:nth-child(4) { border-top: 3px solid #2b8b68; }
+
+body[data-page="dashboard"] #stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+body[data-page="dashboard"] #stats .admin-stat-link {
+  display: grid;
+  align-content: start;
+  min-height: 106px;
+  padding: 14px;
+  border: 1px solid var(--social-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: none;
+}
+body[data-page="dashboard"] #stats .admin-stat-link::before {
+  width: 27px;
+  height: 4px;
+  margin-bottom: 13px;
+}
+body[data-page="dashboard"] #stats .admin-stat-link small { color: var(--social-muted); font-size: 10px; }
+body[data-page="dashboard"] #stats .admin-stat-link strong { color: var(--social-ink); font-size: 24px; }
+body[data-page="dashboard"] #stats .admin-stat-link span { color: var(--social-action); font-size: 11px; }
+body[data-page="dashboard"] #stats .admin-stat-link:hover { transform: translateY(-2px); border-color: #bdccef; box-shadow: var(--social-shadow); }
+
+body[data-page="dashboard"] .admin-dashboard-shortcuts-card { padding-bottom: 14px; }
+body[data-page="dashboard"] .admin-dashboard-shortcuts {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+body[data-page="dashboard"] .admin-dashboard-shortcuts summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 0 2px;
+  color: var(--social-action);
+  font-size: 13px;
+}
+body[data-page="dashboard"] .admin-dashboard-shortcuts .admin-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+body[data-page="dashboard"] .admin-quick-action {
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid var(--social-line);
+  border-radius: 15px;
+  background: #fff;
+  color: var(--social-ink);
+}
+body[data-page="dashboard"] .admin-quick-action:hover { border-color: #bdccef; background: #f8faff; }
+
+/* Mobile bottom navigation inspired by social apps, preserving every existing route. */
+@media (max-width: 860px) {
+  body[data-page="dashboard"] { padding-bottom: 78px; }
+  body[data-page="dashboard"] .admin-topbar { position: sticky; }
+  body[data-page="dashboard"] .admin-nav {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 100;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid #dfe5ef;
+    border-radius: 20px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 12px 30px rgba(35,48,76,.16);
+    backdrop-filter: blur(18px);
+  }
+  body[data-page="dashboard"] .admin-nav-primary {
+    display: flex;
+    flex: 1;
+    gap: 2px;
+  }
+  body[data-page="dashboard"] .admin-nav-link,
+  body[data-page="dashboard"] .admin-nav-more summary {
+    display: flex;
+    min-width: 0;
+    min-height: 56px;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px 4px;
+    font-size: 10px;
+    font-weight: 850;
+  }
+  body[data-page="dashboard"] .admin-nav-icon { width: 20px; height: 20px; }
+  body[data-page="dashboard"] .admin-nav-more { flex: 0 0 58px; }
+  body[data-page="dashboard"] .admin-nav-more summary span,
+  body[data-page="dashboard"] .admin-nav-link span { display: block; }
+  body[data-page="dashboard"] .admin-nav-popover {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 82px;
+    width: auto;
+    max-height: 68vh;
+    overflow-y: auto;
+    border-radius: 18px;
+  }
+}
+
+@media (min-width: 861px) {
+  body[data-page="dashboard"] .mpa-shell { width: min(100%, 1240px); padding: 26px 24px 42px; }
+  body[data-page="dashboard"] .mpa-page-head { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; padding: 26px 28px; }
+  body[data-page="dashboard"] .mpa-page-head .mpa-button { width: auto; min-width: 126px; }
+  body[data-page="dashboard"] .admin-dashboard-status-strip { overflow: visible; }
+  body[data-page="dashboard"] .admin-status-chip { flex-basis: 180px; }
+  body[data-page="dashboard"] .admin-dashboard-section { padding: 24px; }
+  body[data-page="dashboard"] .admin-finance-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  body[data-page="dashboard"] #stats { grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="dashboard"] .admin-status-chip,
+  body[data-page="dashboard"] .admin-finance-card,
+  body[data-page="dashboard"] #stats .admin-stat-link,
+  body[data-page="dashboard"] .admin-quick-action { transition: none; }
+}
+
+
+/* Finance card typography is deliberately separated to avoid label/value collisions. */
+body[data-page="dashboard"] .admin-finance-card {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+body[data-page="dashboard"] .admin-finance-card-label,
+body[data-page="dashboard"] .admin-finance-card-caption {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+body[data-page="dashboard"] .admin-finance-card-label {
+  color: var(--social-muted);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+body[data-page="dashboard"] .admin-finance-card-value {
+  display: block;
+  min-width: 0;
+  margin-top: 3px;
+  color: var(--social-ink);
+  font-size: clamp(19px, 5.5vw, 25px);
+  line-height: 1.2;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+body[data-page="dashboard"] .admin-finance-card-caption {
+  margin-top: auto;
+  color: var(--social-action);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 380px) {
+  body[data-page="dashboard"] .admin-finance-grid,
+  body[data-page="dashboard"] #stats { gap: 8px; }
+  body[data-page="dashboard"] .admin-finance-card,
+  body[data-page="dashboard"] #stats .admin-stat-link { padding: 12px 10px; }
+  body[data-page="dashboard"] .admin-finance-card-value { font-size: 18px; }
+}
+
+
+/* Mobile navigation correction: use a reliable two-row header for the first release.
+   It keeps the brand visible and avoids fixed-position issues on embedded/mobile WebViews. */
+@media (max-width: 860px) {
+  body[data-page="dashboard"] { padding-bottom: 0; }
+  body[data-page="dashboard"] .admin-topbar-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px 10px;
+    padding-block: 8px;
+  }
+  body[data-page="dashboard"] .admin-brand {
+    flex: 1 1 100%;
+    min-height: 42px;
+  }
+  body[data-page="dashboard"] .admin-nav {
+    position: static;
+    order: 2;
+    width: 100%;
+    display: flex;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  body[data-page="dashboard"] .admin-nav-primary {
+    width: 100%;
+    gap: 4px;
+  }
+  body[data-page="dashboard"] .admin-nav-link,
+  body[data-page="dashboard"] .admin-nav-more summary {
+    min-height: 42px;
+    flex-direction: row;
+    gap: 5px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  body[data-page="dashboard"] .admin-nav-icon { width: 18px; height: 18px; }
+  body[data-page="dashboard"] .admin-nav-more { flex: 0 0 58px; }
+  body[data-page="dashboard"] .admin-nav-popover { top: 112px; bottom: auto; }
+  body[data-page="dashboard"] .mpa-shell { padding-bottom: 24px; }
+}
