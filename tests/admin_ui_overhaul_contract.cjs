@@ -25,6 +25,6 @@ assert.match(js, /MutationObserver/);
 assert.match(js, /localStorage/);
 for (const file of fs.readdirSync('admin').filter(name => name.endsWith('.html'))) {
   const html = fs.readFileSync(`admin/${file}`, 'utf8');
-  if (html.includes('admin-app.js')) assert.match(html, /overhaul=admin-ui-round2-v3/);
+  if (html.includes('admin-app.js')) assert.match(html, /overhaul=admin-ui-round2-v4/);
 }
 console.log('admin UI overhaul contract: PASS');
