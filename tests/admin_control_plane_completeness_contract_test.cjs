@@ -19,9 +19,11 @@ assert.doesNotMatch(admin, /เข้าสู่ระบบด้วยบั�
 assert.doesNotMatch(admin, /Admin Application นี้ทำงานแยกจาก Customer Application/, 'หน้า Login ต้องไม่มีข้อความระบบด้านล่าง');
 assert.match(admin, /aria-label="อีเมล"/, 'หน้า Login ต้องคง label สำหรับ accessibility');
 assert.match(storesPage, /admin-control-plane-completeness\.js/, 'หน้าร้านต้องโหลด action sheet ความครบถ้วน');
-assert.match(storesPage, /admin-store-location-picker\.js\?v=store-map-v2/, 'หน้าร้านต้องโหลดตัวเลือกตำแหน่งรุ่นล่าสุด');
+assert.match(storesPage, /admin-store-location-picker\.js\?v=store-map-v3/, 'หน้าร้านต้องโหลดตัวเลือกตำแหน่งรุ่นล่าสุด');
 assert.match(storeLocationPicker, /form\[data-store-form\], form\[data-form\]/, 'ตัวเลือกตำแหน่งต้องรองรับฟอร์ม Store Control Plane ที่สร้างจริง');
 assert.match(storeLocationPicker, /form\.elements\.location_lat && form\.elements\.location_lng/, 'ตัวเลือกตำแหน่งต้องติดตั้งเฉพาะฟอร์มที่มีพิกัดร้าน');
+assert.match(storeLocationPicker, /const grid = lngInput\.closest\('\.admin-form-grid'\) \|\| latInput\.closest\('\.admin-form-grid'\)/, 'ตัวเลือกตำแหน่งต้องหา grid ของฟอร์มจริงก่อนติดตั้ง');
+assert.match(storeLocationPicker, /if \(!grid\) return;\s+form\.dataset\.locationPickerReady = 'true';/, 'ตัวเลือกตำแหน่งต้องไม่ล็อกสถานะพร้อมก่อนพบตำแหน่งแทรกในฟอร์ม');
 assert.match(financePage, /admin-control-plane-completeness\.js/, 'หน้าการเงินต้องโหลด withdrawal review sheet');
 assert.match(loginPage, /admin-control-plane-completeness\.css/, 'หน้า Login ต้องโหลด style สำหรับ hidden accessibility labels');
 assert.match(completeness, /ข้อมูลนิติบุคคลและติดต่อ/, 'Store ต้องมี action ข้อมูลนิติบุคคลและติดต่อ');

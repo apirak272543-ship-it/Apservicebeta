@@ -18,13 +18,13 @@
     if (form.dataset.locationPickerReady === 'true' || !window.L) return;
     const latInput = form.elements.location_lat, lngInput = form.elements.location_lng;
     if (!latInput || !lngInput) return;
-    form.dataset.locationPickerReady = 'true';
-
     const referencePoint = pointFromInputs(latInput, lngInput) || [13.7563, 100.5018];
-    const grid = lngInput.closest('.admin-form-grid');
+    const grid = lngInput.closest('.admin-form-grid') || latInput.closest('.admin-form-grid');
     if (!grid) return;
+    form.dataset.locationPickerReady = 'true';
     const picker = document.createElement('section');
     picker.className = 'admin-store-location-picker';
+    picker.dataset.storeLocationPicker = 'true';
     picker.innerHTML = `<div class="admin-store-location-picker__head"><div><h4>เลือกตำแหน่งร้านบนแผนที่</h4><p>แตะแผนที่ ค้นหาสถานที่ หรือใช้ตำแหน่งปัจจุบัน แล้วระบบจะกรอกพิกัดให้โดยอัตโนมัติ</p></div><span class="mpa-badge">ไม่บังคับ</span></div><div class="admin-store-location-picker__search"><input type="search" data-location-search placeholder="ค้นหาชื่อสถานที่หรือที่อยู่"><button type="button" class="mpa-button mpa-button-secondary" data-location-search-button>ค้นหา</button></div><div class="admin-store-location-picker__actions"><button type="button" class="mpa-button mpa-button-secondary" data-location-gps>ใช้ GPS</button><button type="button" class="mpa-button mpa-button-secondary" data-location-source>สลับแหล่งภาพ</button><button type="button" class="mpa-button mpa-button-secondary" data-location-retry>ลองใหม่</button></div><div class="admin-store-location-map" data-location-map aria-label="แผนที่สำหรับเลือกตำแหน่งร้าน"></div><p class="admin-store-location-status" data-location-status>แตะบนแผนที่เพื่อปักหมุดตำแหน่งร้าน</p>`;
     grid.after(picker);
 
@@ -103,6 +103,15 @@
       if (form.elements.location_lat && form.elements.location_lng) mountPicker(form);
     });
   }
-  new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan, { once: true }); else scan();
+  function start() {
+    scan();
+    const observer = new MutationObserver(scan);
+    observer.observe(document.body, { childList: true, subtree: true });
+    let retries = 0;
+    const retryTimer = window.setInterval(() => {
+      scan();
+      if (document.querySelector('[data-store-location-picker]') || ++retries >= 80) window.clearInterval(retryTimer);
+    }, 250);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();
 }());
