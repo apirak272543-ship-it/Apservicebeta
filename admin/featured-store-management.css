@@ -1,0 +1,11 @@
+.featured-store-management { padding-top: 20px; }
+.featured-store-settings,.featured-store-campaign { margin: 0 0 16px; padding: 16px; }
+.featured-store-settings__head,.featured-store-campaigns__head,.featured-store-campaign__head,.featured-store-campaign__actions { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.featured-store-settings h3,.featured-store-campaigns h3,.featured-store-campaign h3 { margin:0; font-size:16px; }
+.featured-store-settings p,.featured-store-campaigns p,.featured-store-campaign p { margin:4px 0 0; }
+.featured-store-campaign__active { width:126px; flex:0 0 126px; }
+.featured-store-campaign__actions { margin-top:14px; align-items:center; }
+.featured-store-management__loading,.featured-store-management__empty,.featured-store-management__error { padding:15px; border-radius:14px; background:#f2f8f7; color:var(--ap-muted); }
+.featured-store-management__error { border:1px solid rgba(200,70,70,.25); background:#fff4f4; color:#9d3030; }
+.featured-store-campaign [data-featured-store-picker] { min-height:124px; }
+@media (max-width:620px) { .featured-store-settings__head,.featured-store-campaigns__head,.featured-store-campaign__head,.featured-store-campaign__actions { align-items:stretch; flex-direction:column; }.featured-store-settings__head .mpa-button,.featured-store-campaigns__head .mpa-button,.featured-store-campaign__actions .mpa-button { width:100%; }.featured-store-campaign__active { width:100%; flex-basis:auto; } }
