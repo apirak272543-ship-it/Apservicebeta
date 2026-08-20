@@ -1,0 +1,10 @@
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const admin = fs.readFileSync(path.join(root, 'admin/admin-control-plane-completeness.js'), 'utf8');
+assert.match(admin, /order_refunds\?select=/, 'Admin Finance must load the real order_refunds queue');
+assert.match(admin, /process_order_refund/, 'Admin Refund UI must use the central server action');
+assert.match(admin, /refund-proofs/, 'Refund proof must use the private refund-proofs bucket');
+assert.match(admin, /data-refund-action/, 'Admin must expose actionable refund controls');
+console.log('admin_refund_workflow_contract_test: PASS');

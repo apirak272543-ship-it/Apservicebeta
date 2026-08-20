@@ -105,8 +105,76 @@
     const rows = [['ผู้รับเงิน', r.name || w.recipient_name || '-'], ['โทรศัพท์', r.phone || '-'], ['อีเมล', r.email || '-'], ['ที่อยู่', r.address || '-'], ['ประเภทรายการ', w.recipient_type || '-'], ['ยอดที่ขอถอน', money(w.amount)], ['ชื่อบัญชี/ผู้รับ', payout.account_name || payout.accountName || payout.recipient_name || '-'], ['ธนาคาร/ช่องทาง', payout.bank_name || payout.bank || payout.channel || '-'], ['เลขบัญชี/พร้อมเพย์', payout.account_number || payout.accountNumber || payout.promptpay || '-'], ['QR ที่ลงทะเบียน', payout.qr_url || payout.qrUrl || '-'], ['หมายเหตุผู้ขอ', w.recipient_note || '-']];
     const node = document.createElement('div'); node.className = 'mpa-modal-backdrop'; node.innerHTML = `<section class="mpa-card mpa-modal admin-store-modal" role="dialog" aria-modal="true"><div class="mpa-page-head"><div><h2 style="margin:0">ตรวจผู้รับและช่องทางรับเงิน</h2><p class="mpa-muted">ตรวจข้อมูล snapshot ณ เวลาส่งคำขอ ก่อนอนุมัติหรือบันทึกการโอน</p></div><button type="button" class="mpa-button mpa-button-secondary" data-close>ปิด</button></div><dl class="admin-withdrawal-review-grid">${rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>${payout.qr_url || payout.qrUrl ? `<img src="${esc(payout.qr_url || payout.qrUrl)}" alt="QR ผู้รับเงิน" class="admin-withdrawal-qr">` : ''}<div class="admin-modal-actions"><button type="button" class="mpa-button mpa-button-secondary" data-close>กลับ</button>${continueButton ? '<button type="button" class="mpa-button" data-continue>ยืนยันข้อมูลแล้ว ดำเนินการต่อ</button>' : ''}</div></section>`; document.body.append(node); node.querySelectorAll('[data-close]').forEach(button => button.onclick = () => close(node)); node.querySelector('[data-continue]')?.addEventListener('click', () => { close(node); continueButton.dataset.withdrawalReviewAccepted = 'true'; continueButton.click(); });
   };
+  const refundLabel = status => ({ requested: 'รอตรวจสอบ', approved: 'อนุมัติแล้ว รอโอน', rejected: 'ปฏิเสธ', paid: 'โอนคืนแล้ว', cancelled: 'ยกเลิก' }[String(status || '').toLowerCase()] || String(status || '-'));
+  const refundMoney = value => runtime()?.M?.ui?.baht(value || 0) || `${Number(value || 0).toFixed(2)} บาท`;
+  const refundIdempotency = action => `refund-${action}-${typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+  const refundRows = async () => {
+    const R = runtime();
+    const [refunds, orders] = await Promise.all([
+      R.M.request('order_refunds?select=id,order_id,customer_id,requested_amount,approved_amount,paid_amount,currency,status,reason,approved_at,paid_at,payment_reference,proof_image_url,created_at&order=created_at.desc&limit=500', { private: true, forceFresh: true }),
+      R.M.request('delivery_orders?select=id,customer_name,store_name,status,payable,payment_method&order=ordered_at.desc&limit=1000', { private: true, cacheTtlMs: 15_000 }),
+    ]);
+    const byOrder = new Map((orders || []).map(row => [String(row.id), row]));
+    return (refunds || []).map(row => ({ ...row, order: byOrder.get(String(row.order_id)) || {} }));
+  };
+  const openRefundProof = async row => {
+    const stored = String(row.proof_image_url || '');
+    if (!stored) return notice('รายการนี้ยังไม่มีหลักฐานการโอนคืน', 'error');
+    try {
+      const R = runtime(); const session = await R.M.auth.refreshSession(false); if (!session?.access_token) throw new Error('เซสชัน Admin หมดอายุ');
+      const parts = stored.split('/'); const bucket = parts.shift(); const path = parts.join('/');
+      if (!bucket || !path) throw new Error('ตำแหน่งหลักฐานคืนเงินไม่ถูกต้อง');
+      const url = await window.APServiceMedia.createSignedImageUrl({ url: R.M.config.url, publishableKey: R.M.config.publishableKey, accessToken: session.access_token, bucket, path });
+      const node = document.createElement('div'); node.className = 'mpa-modal-backdrop'; node.innerHTML = `<section class="mpa-card mpa-modal" role="dialog" aria-modal="true"><div class="mpa-page-head"><div><h2 style="margin:0">หลักฐานการโอนคืน</h2><p class="mpa-muted">ออร์เดอร์ ${esc(row.order_id)}</p></div><button type="button" class="mpa-button mpa-button-secondary" data-close>ปิด</button></div><img src="${esc(url)}" alt="หลักฐานการโอนคืนออร์เดอร์ ${esc(row.order_id)}" style="display:block;width:100%;max-height:70vh;object-fit:contain;border:1px solid var(--ap-line);border-radius:12px;background:#f8faf9" referrerpolicy="no-referrer"></section>`;
+      node.querySelector('[data-close]').onclick = () => node.remove(); document.body.append(node);
+    } catch (error) { notice(error.message || 'เปิดหลักฐานคืนเงินไม่สำเร็จ', 'error'); }
+  };
+  const openRefundAction = async (row, afterSave) => {
+    const isRequested = row.status === 'requested'; const isApproved = row.status === 'approved';
+    if (!isRequested && !isApproved) return notice('รายการนี้ไม่อยู่ในสถานะที่ดำเนินการต่อได้', 'error');
+    const action = isRequested ? 'approve' : 'mark_paid';
+    const title = action === 'approve' ? `พิจารณาคืนเงิน · ${row.order_id}` : `บันทึกการโอนคืน · ${row.order_id}`;
+    const amountLabel = action === 'approve' ? 'ยอดอนุมัติคืนเงิน' : 'ยอดที่โอนคืน';
+    const defaultAmount = action === 'approve' ? row.requested_amount : row.approved_amount;
+    const content = `${action === 'approve' ? `<label class="mpa-field"><span>${amountLabel}</span><input name="amount" type="number" min="0.01" max="${esc(row.requested_amount)}" step="0.01" value="${esc(defaultAmount)}" required></label><label class="mpa-field"><span>ผลพิจารณา</span><select name="decision"><option value="approve">อนุมัติคำขอคืนเงิน</option><option value="reject">ปฏิเสธคำขอคืนเงิน</option></select></label>` : `<label class="mpa-field"><span>${amountLabel}</span><input name="amount" type="number" min="0.01" max="${esc(row.approved_amount)}" step="0.01" value="${esc(defaultAmount)}" required></label><label class="mpa-field"><span>เลขอ้างอิงการโอน</span><input name="reference" maxlength="120" placeholder="เช่น TXN-20260820-001"></label><label class="mpa-field"><span>หลักฐานการโอนคืน (ถ้ามี)</span><input name="proof" type="file" accept="image/jpeg,image/png,image/webp"><small class="mpa-muted">ต้องมีเลขอ้างอิงหรือหลักฐานอย่างน้อยหนึ่งอย่าง</small></label>`}<label class="mpa-field admin-form-full"><span>เหตุผล / หมายเหตุ</span><textarea name="reason" rows="3" minlength="10" maxlength="1000" required placeholder="ระบุข้อมูลที่ตรวจสอบและเหตุผลอย่างน้อย 10 ตัวอักษร">${action === 'approve' ? esc(row.reason || '') : ''}</textarea></label><dl class="admin-withdrawal-review-grid"><div><dt>ออร์เดอร์</dt><dd>${esc(row.order_id)}</dd></div><div><dt>ลูกค้า</dt><dd>${esc(row.order.customer_name || row.customer_id || '-')}</dd></div><div><dt>ร้านค้า</dt><dd>${esc(row.order.store_name || '-')}</dd></div><div><dt>สถานะคำขอ</dt><dd>${esc(refundLabel(row.status))}</dd></div><div><dt>ยอดที่ขอ</dt><dd>${refundMoney(row.requested_amount)}</dd></div>${row.approved_amount !== null && row.approved_amount !== undefined ? `<div><dt>ยอดที่อนุมัติ</dt><dd>${refundMoney(row.approved_amount)}</dd></div>` : ''}</dl>`;
+    modal(title, 'การดำเนินการนี้จะบันทึก Audit และแจ้ง Customer ตามสถานะจริงของ Server', content, action === 'approve' ? 'บันทึกผลพิจารณา' : 'บันทึกว่าโอนคืนแล้ว', async form => {
+      const reason = form.elements.reason.value.trim(); const amount = Number(form.elements.amount.value); const decision = form.elements.decision?.value || action;
+      if (reason.length < 10) throw new Error('กรุณาระบุเหตุผลอย่างน้อย 10 ตัวอักษร');
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error('กรุณาระบุยอดเงินที่ถูกต้อง');
+      let proofImageUrl = null;
+      if (action === 'mark_paid') {
+        const reference = form.elements.reference.value.trim(); const file = form.elements.proof.files?.[0];
+        if (!reference && !file) throw new Error('กรุณาระบุเลขอ้างอิงหรือเลือกหลักฐานการโอนอย่างน้อยหนึ่งอย่าง');
+        if (file) {
+          const R = runtime(); const session = await R.M.auth.refreshSession(false); if (!session?.access_token || !session?.user?.id) throw new Error('เซสชัน Admin หมดอายุ');
+          const uploaded = await window.APServiceMedia.uploadPrivateImage(file, { url: R.M.config.url, publishableKey: R.M.config.publishableKey, accessToken: session.access_token, actorId: session.user.id, bucket: 'refund-proofs', scope: `refund-${row.id}`, mediaType: 'REFUND_PROOF', ownerType: 'order_refund' });
+          proofImageUrl = uploaded.storageRef;
+        }
+        await invoke({ action: 'process_order_refund', refund_id: row.id, refund_action: 'mark_paid', paid_amount: amount, payment_reference: reference || null, proof_image_url: proofImageUrl, reason, idempotency_key: refundIdempotency('paid') });
+      } else {
+        await invoke({ action: 'process_order_refund', refund_id: row.id, refund_action: decision, approved_amount: decision === 'approve' ? amount : null, reason, idempotency_key: refundIdempotency(decision) });
+      }
+      await afterSave();
+    });
+  };
+  const enhanceRefundQueue = async host => {
+    if (!host || host.querySelector('[data-refund-queue]') || host.dataset.refundQueueLoading === 'true') return;
+    host.dataset.refundQueueLoading = 'true';
+    try {
+      const rows = await refundRows();
+      const section = document.createElement('section'); section.dataset.refundQueue = 'true'; section.style.marginTop = '24px';
+      const actionable = rows.filter(row => ['requested', 'approved'].includes(row.status)).length;
+      section.innerHTML = `<div class="admin-section-head"><div><h2 style="margin:0">คิวคืนเงินออร์เดอร์</h2><p class="mpa-muted">ตรวจคำขอจาก Cancellation และบันทึกผลการโอนคืนใน State Machine เดิม · งานค้าง ${actionable} รายการ</p></div><button type="button" class="mpa-button mpa-button-secondary" data-refund-refresh>รีเฟรชคิวคืนเงิน</button></div>${rows.length ? `<div class="mpa-table-wrap"><table class="mpa-table"><thead><tr><th>สร้างเมื่อ</th><th>ออร์เดอร์/ลูกค้า</th><th>ยอด</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>${rows.map(row => `<tr><td>${row.created_at ? new Date(row.created_at).toLocaleString('th-TH') : '-'}</td><td><b>${esc(row.order_id)}</b><br><span class="mpa-muted">${esc(row.order.customer_name || row.customer_id || '-')}</span></td><td>${refundMoney(row.requested_amount)}${row.approved_amount !== null && row.approved_amount !== undefined ? `<br><small>อนุมัติ ${refundMoney(row.approved_amount)}</small>` : ''}${row.paid_amount !== null && row.paid_amount !== undefined ? `<br><small>โอน ${refundMoney(row.paid_amount)}</small>` : ''}</td><td><span class="mpa-badge">${esc(refundLabel(row.status))}</span></td><td><div style="display:flex;gap:7px;flex-wrap:wrap">${row.status === 'requested' || row.status === 'approved' ? `<button type="button" class="mpa-button" data-refund-action="${esc(row.id)}">${row.status === 'requested' ? 'พิจารณา' : 'บันทึกโอนคืน'}</button>` : ''}${row.proof_image_url ? `<button type="button" class="mpa-button mpa-button-secondary" data-refund-proof="${esc(row.id)}">ดูหลักฐาน</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>` : '<p class="mpa-muted">ยังไม่มีคำขอคืนเงิน</p>'}`;
+      host.append(section);
+      delete host.dataset.refundQueueLoading;
+      section.querySelector('[data-refund-refresh]').onclick = () => { section.remove(); delete host.dataset.refundQueueLoading; enhanceRefundQueue(host); };
+      section.querySelectorAll('[data-refund-action]').forEach(button => { const row = rows.find(item => item.id === button.dataset.refundAction); button.onclick = () => openRefundAction(row, async () => { section.remove(); await enhanceRefundQueue(host); location.reload(); }).catch(error => notice(error.message || 'เปิดงานคืนเงินไม่สำเร็จ', 'error')); });
+      section.querySelectorAll('[data-refund-proof]').forEach(button => { const row = rows.find(item => item.id === button.dataset.refundProof); button.onclick = () => openRefundProof(row); });
+    } catch (error) { delete host.dataset.refundQueueLoading; const section = document.createElement('section'); section.dataset.refundQueue = 'true'; section.style.marginTop = '24px'; section.innerHTML = `<p class="mpa-muted">โหลดคิวคืนเงินไม่สำเร็จ: ${esc(error.message)}</p>`; host.append(section); }
+  };
   const enhanceFinance = () => {
     const host = document.getElementById('finance'); if (!host) return;
+    enhanceRefundQueue(host);
     payoutRows(host).forEach(({ id, actionBox }) => {
       if (actionBox.querySelector(`[data-withdrawal-detail="${CSS.escape(id)}"]`)) return;
       const detail = document.createElement('button'); detail.type = 'button'; detail.className = 'mpa-button mpa-button-secondary'; detail.dataset.withdrawalDetail = id; detail.textContent = 'ตรวจผู้รับ'; actionBox.prepend(detail);
