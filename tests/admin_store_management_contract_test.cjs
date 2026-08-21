@@ -27,6 +27,7 @@ assert.match(admin, /data-store-account/, 'Store cards ต้องมีเม�
 assert.match(admin, /admin-store-card/, 'Store Control Plane ต้อง render ร้านค้าเป็น card workspace');
 assert.match(admin, /let searchTimer = 0/, 'Stores search ต้อง debounce การ re-render เพื่อไม่ตัดข้อความระหว่างพิมพ์');
 assert.match(admin, /window\.setTimeout\(\(\) => \{/, 'Stores search ต้องเลื่อน render หลัง input event เพื่อรองรับ paste/typing');
+assert.match(admin, /host\.querySelector\('#storeSearch'\)\.oninput = event =>/, 'storesV3 search path ต้องใช้ debounced input handler');
 assert.match(stores, /admin-management\.css/, 'Stores route ต้องโหลด responsive management styles');
 assert.match(styles, /\.admin-store-grid/, 'ต้องมี layout card ของ Store management');
 assert.match(styles, /@media\(max-width:760px\).*\.admin-store-grid/s, 'Store management ต้องมี mobile breakpoint');
