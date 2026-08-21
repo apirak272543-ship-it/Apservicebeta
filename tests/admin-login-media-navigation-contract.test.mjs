@@ -11,6 +11,13 @@ const loginMediaTab = read('admin/admin-login-media-tab.js');
 const loginMediaPage = read('admin/login-media.html');
 const loginMediaRuntime = read('admin/login-media.js');
 
+assert.match(adminApp, /สำหรับผู้ดูแลระบบ/, 'Admin Login ต้องใช้คำอธิบายบทบาทสำหรับผู้ใช้');
+assert.doesNotMatch(adminApp, /Admin Control Plane/, 'Admin Login ต้องไม่เผยศัพท์ implementation บน public screen');
+assert.doesNotMatch(adminApp, /สิทธิ์ Admin จาก Backend/, 'Admin Login ต้องไม่เผยรายละเอียด backend บน public screen');
+assert.match(adminApp, /กรุณากรอกอีเมลและรหัสผ่านให้ครบ/, 'Admin Login ต้องแจ้งเมื่อกรอกข้อมูลไม่ครบก่อนเรียก sign-in');
+assert.match(adminApp, /อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่/, 'Admin Login ต้อง map provider credential error เป็นภาษาไทย');
+assert.match(adminApp, /เข้าสู่ระบบ Admin ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง/, 'Admin Login ต้องมีข้อความ fallback ที่ไม่เผย raw provider error');
+
 assert.ok(existsSync(resolve(root, 'admin/admin-retail.html')), 'Retail management page must exist at admin/admin-retail.html');
 assert.match(adminApp, /retail:\s*'admin-retail\.html'/, 'Retail menu must resolve to the published admin-retail.html page');
 assert.match(adminApp, /href="\$\{routeFor\(key\)\}"/, 'Admin navigation must use the route resolver');
@@ -28,4 +35,4 @@ assert.match(loginMediaRuntime, /canvas\.toBlob\(resolve, 'image\/jpeg', 0\.82\)
 assert.match(loginMediaPage, /type="file" accept="image\/\*"/, 'The panel must only accept image files from the device rather than external URLs');
 assert.doesNotMatch(loginMediaPage, /type="url"/, 'The panel must not offer an external image URL input');
 
-console.log('Admin Login Media + Retail navigation contract: PASS');
+console.log('Admin Login, Media + Retail navigation contract: PASS');
