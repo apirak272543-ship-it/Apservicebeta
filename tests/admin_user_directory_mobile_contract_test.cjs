@@ -24,6 +24,7 @@ assert.match(admin, /admin-workspace-layout/, 'AI Workspace ต้องใช�
 assert.doesNotMatch(admin, /grid-template-columns:minmax\(240px,\.75fr\) minmax\(0,1\.5fr\)/, 'AI Workspace ต้องไม่ฝัง desktop grid inline');
 assert.match(styles, /\.admin-workspace-layout/, 'ต้องมี responsive workspace layout');
 assert.match(styles, /\.admin-role-editor/, 'Account Control Plane ต้องมี role/permission controls ที่อ่านง่าย');
+assert.match(styles, /\.admin-user-card\[hidden\]\{display:none!important\}/, 'Accounts search ต้องซ่อน card ที่ไม่ตรงคำค้นจริงด้วย CSS');
 assert.match(styles, /@media\(max-width:760px\).*\.admin-workspace-layout\{grid-template-columns:1fr\}/s, 'AI Workspace ต้องเปลี่ยนเป็นคอลัมน์เดียวบนมือถือ');
 assert.match(operations, /admin-management\.css/, 'Operations route ต้องโหลด management styles');
 assert.match(workspace, /admin-management\.css/, 'AI Workspace route ต้องโหลด management styles');
