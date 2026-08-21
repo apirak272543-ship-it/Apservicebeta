@@ -14,7 +14,6 @@ const migration = fs.existsSync(migrationPath) ? fs.readFileSync(migrationPath, 
 const roleAccess = fs.existsSync(roleAccessPath) ? fs.readFileSync(roleAccessPath, 'utf8') : null;
 
 assert.doesNotMatch(patch, /accounts:\s*accountsPatch/, 'หน้า accounts ต้องใช้ Account Control Plane รุ่นใหม่ ไม่ถูก override ด้วย patch เก่า');
-assert.match(patch, /accountSearch[\s\S]*row\.hidden = !match[\s\S]*data-account-count/, 'Accounts search ต้องกรองแถวแบบ in-place และคงค่า input ระหว่างพิมพ์');
 assert.match(admin, /operationsV2\('admins'\)/, 'route accounts ต้องเปิด Account Control Plane รุ่นใหม่');
 assert.doesNotMatch(admin, /เข้าสู่ระบบด้วยบัญชีที่ได้รับสิทธิ์ Admin ใน Supabase/, 'หน้า Login ต้องไม่มีข้อความระบบ');
 assert.doesNotMatch(admin, /Admin Application นี้ทำงานแยกจาก Customer Application/, 'หน้า Login ต้องไม่มีข้อความระบบด้านล่าง');

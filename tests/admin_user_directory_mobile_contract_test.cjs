@@ -15,6 +15,8 @@ assert.match(admin, /set_account_control/, 'user directory ต้องจัด
 assert.match(admin, /adjust_customer_wallet/, 'user directory ต้องปรับยอดผ่าน immutable wallet ledger action');
 assert.match(admin, /create_managed_account/, 'user directory ต้องสร้างบัญชี Admin/Customer ผ่าน server action');
 assert.match(admin, /id="userSearch"/, 'user directory ต้องมีช่องค้นหา');
+assert.match(admin, /data-user-search-count/, 'user directory ต้องแสดงจำนวนผลค้นหา');
+assert.match(admin, /userSearch[\s\S]*card\.hidden = !match/, 'user directory search ต้องกรอง card แบบ in-place และไม่ re-render input ทุกตัวอักษร');
 assert.match(admin, /data-user-role/, 'user directory ต้องมีตัวกรองบทบาท');
 assert.match(admin, /admin-user-card/, 'user directory ต้องใช้ card ที่อ่านง่ายแทนตารางแคบบนมือถือ');
 assert.match(admin, /cash_on_delivery/, 'user directory ต้องมี control สำหรับสิทธิ์ COD');
