@@ -26,6 +26,19 @@
     if (host) host.innerHTML = `<section class="mpa-card admin-retail-empty"><h2>${esc(title)}</h2><p class="mpa-muted">${esc(description)}</p></section>`;
   }
 
+  async function identifierModal(product) {
+    if (!product?.store_product_id) return M.ui.setNotice('ไม่พบสินค้าของร้านค้าที่เลือก', 'error');
+    const typeLabels = { barcode: 'บาร์โค้ด', qr: 'QR Code', external: 'รหัสภายนอก', sku: 'SKU' };
+    const { host, close } = createModal(`รหัสสินค้า: ${product.name}`, `<div class="mpa-page-head"><div><h2 style="margin:0">รหัสสินค้า</h2><p class="mpa-muted">เพิ่ม barcode หรือ QR ที่ใช้สแกนเข้าตะกร้า POS โดยต้องไม่ซ้ำกับสินค้าอื่น</p></div><button class="mpa-button mpa-button-secondary" type="button" data-retail-close>ปิด</button></div><div data-retail-identifiers style="display:grid;gap:8px;margin:12px 0"></div><form data-retail-identifier-form><div class="admin-retail-form-grid"><label class="mpa-field"><span>ชนิดรหัส</span><select name="identifier_type"><option value="barcode">บาร์โค้ด</option><option value="qr">QR Code</option><option value="external">รหัสภายนอก</option><option value="sku">SKU</option></select></label><label class="mpa-field"><span>ค่ารหัส</span><input name="identifier_value" required maxlength="160" autocomplete="off" placeholder="เช่น 8851234567890"></label></div><div class="admin-modal-actions"><button class="mpa-button" type="submit">เพิ่มรหัส</button></div><p class="mpa-muted" data-retail-identifier-status role="status" aria-live="polite"></p></form>`);
+    const list = host.querySelector('[data-retail-identifiers]');
+    const form = host.querySelector('[data-retail-identifier-form]');
+    const status = host.querySelector('[data-retail-identifier-status]');
+    const draw = rows => { list.innerHTML = rows.length ? rows.map(row => `<div class="mpa-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px"><div><strong>${esc(typeLabels[row.identifier_type] || row.identifier_type)}</strong><div class="mpa-muted" style="word-break:break-all">${esc(row.identifier_value)}</div></div><button class="mpa-button mpa-button-secondary" type="button" data-delete-identifier="${esc(row.id)}">ลบ</button></div>`).join('') : '<p class="mpa-muted">ยังไม่มี barcode หรือ QR ที่ผูกกับสินค้านี้</p>'; list.querySelectorAll('[data-delete-identifier]').forEach(button => button.onclick = async () => { if (!window.confirm('ยืนยันลบรหัสสินค้านี้หรือไม่')) return; button.disabled = true; try { await request('rpc/retail_admin_delete_product_identifier', { method: 'POST', body: JSON.stringify({ p_identifier_id: button.dataset.deleteIdentifier }) }); status.textContent = 'ลบรหัสแล้ว'; await load(); } catch (error) { button.disabled = false; status.textContent = error?.message || 'ลบรหัสไม่สำเร็จ'; } }); };
+    const load = async () => { try { const rows = await request('rpc/retail_admin_list_product_identifiers', { method: 'POST', body: JSON.stringify({ p_store_product_id: product.store_product_id }) }); draw(Array.isArray(rows) ? rows : []); } catch (error) { list.innerHTML = `<p class="mpa-muted">โหลดรหัสสินค้าไม่สำเร็จ: ${esc(error?.message || '')}</p>`; } };
+    form.onsubmit = async event => { event.preventDefault(); const submit = form.querySelector('[type="submit"]'); submit.disabled = true; status.textContent = 'กำลังบันทึกรหัส…'; try { await request('rpc/retail_admin_upsert_product_identifier', { method: 'POST', body: JSON.stringify({ p_store_product_id: product.store_product_id, p_identifier_type: form.elements.identifier_type.value, p_identifier_value: form.elements.identifier_value.value.trim() }) }); form.reset(); status.textContent = 'เพิ่มรหัสแล้ว'; await load(); } catch (error) { status.textContent = error?.message || 'เพิ่มรหัสไม่สำเร็จ'; } finally { submit.disabled = false; } };
+    await load();
+  }
+
   function renderProducts() {
     const host = document.getElementById('retailCatalog');
     if (!host) return;
@@ -34,7 +47,7 @@
     host.innerHTML = `<div class="admin-retail-grid">${state.products.map(row => {
       const stock = number(row.on_hand_quantity), reserved = number(row.reserved_quantity), minimum = number(row.minimum_quantity);
       const image = row.image_url ? `<img class="admin-retail-product__image" src="${esc(row.image_url)}" alt="${esc(row.name)}">` : '<div class="admin-retail-product__fallback" aria-hidden="true">▣</div>';
-      return `<article class="mpa-card admin-retail-product"><div class="admin-retail-product__top">${image}<div><h3>${esc(row.name)}</h3><p class="mpa-muted">${esc(row.brand_name || row.category_name || 'ยังไม่ระบุแบรนด์หรือหมวดหมู่')}</p><p class="mpa-muted">${esc(row.sku || 'ไม่มี SKU')} · ${esc(row.unit_name)}</p></div></div><div class="admin-retail-stock"><span>คงเหลือ <strong>${esc(stock)}</strong></span><span>จองแล้ว ${esc(reserved)}</span><span>ขั้นต่ำ ${esc(minimum)}</span></div><div class="admin-retail-summary"><strong>${money(row.selling_price)}</strong><span class="mpa-muted">${row.active ? 'พร้อมขาย' : 'ปิดการขาย'}</span></div><div class="admin-retail-actions"><button class="mpa-button mpa-button-secondary" type="button" data-retail-action="edit" data-product-id="${esc(row.store_product_id)}">แก้ไขสินค้า</button><button class="mpa-button" type="button" data-retail-action="stock" data-product-id="${esc(row.store_product_id)}">ปรับสต๊อก</button></div></article>`;
+      return `<article class="mpa-card admin-retail-product"><div class="admin-retail-product__top">${image}<div><h3>${esc(row.name)}</h3><p class="mpa-muted">${esc(row.brand_name || row.category_name || 'ยังไม่ระบุแบรนด์หรือหมวดหมู่')}</p><p class="mpa-muted">${esc(row.sku || 'ไม่มี SKU')} · ${esc(row.unit_name)}</p></div></div><div class="admin-retail-stock"><span>คงเหลือ <strong>${esc(stock)}</strong></span><span>จองแล้ว ${esc(reserved)}</span><span>ขั้นต่ำ ${esc(minimum)}</span></div><div class="admin-retail-summary"><strong>${money(row.selling_price)}</strong><span class="mpa-muted">${row.active ? 'พร้อมขาย' : 'ปิดการขาย'}</span></div><div class="admin-retail-actions"><button class="mpa-button mpa-button-secondary" type="button" data-retail-action="edit" data-product-id="${esc(row.store_product_id)}">แก้ไขสินค้า</button><button class="mpa-button" type="button" data-retail-action="stock" data-product-id="${esc(row.store_product_id)}">ปรับสต๊อก</button><button class="mpa-button mpa-button-secondary" type="button" data-retail-action="identifiers" data-product-id="${esc(row.store_product_id)}">บาร์โค้ด/QR</button></div></article>`;
     }).join('')}</div>`;
   }
 
@@ -160,6 +173,7 @@
       if (!product) return M.ui.setNotice('ไม่พบข้อมูลสินค้า กรุณารีเฟรชรายการก่อน', 'error');
       if (button.dataset.retailAction === 'edit') productModal(product);
       if (button.dataset.retailAction === 'stock') stockModal(product);
+      if (button.dataset.retailAction === 'identifiers') identifierModal(product);
     };
     await loadStores();
     renderProducts();
