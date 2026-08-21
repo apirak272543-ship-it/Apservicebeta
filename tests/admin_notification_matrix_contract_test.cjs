@@ -6,6 +6,7 @@ const app = fs.readFileSync(path.join(root, 'admin/admin-app.js'), 'utf8');
 assert.match(app, /notificationsV2/, 'Admin must use the current Notifications workboard');
 assert.match(app, /mobile_notifications\?select=id,title,body,data,recipient_role,status,read_at,created_at,sent_at/, 'Admin must read delivery and read state fields');
 assert.match(app, /safeDeepLink/, 'Admin must validate notification deep links');
+assert.match(app, /const raw = String\(value \|\| ''\)\.trim\(\); if \(!raw\) return ''/, 'Empty notification deep links must not resolve to the current page');
 assert.match(app, /อ่านแล้ว\/ยังไม่อ่านอ้างอิงจาก read_at/, 'Admin must explain read state semantics');
 assert.match(app, /admin-notice-unread/, 'Admin must visually distinguish unread notifications');
 console.log('admin_notification_matrix_contract_test: PASS');
