@@ -22,7 +22,8 @@
       .replace(/\bkey สำคัญ/g, 'ข้อมูลสำคัญ')
       .replace(/\bserver\b/g, 'ระบบ')
       .replace(/\bworkflow\b/g, 'ขั้นตอนการดำเนินงาน')
-      .replace(/\brole\b/g, 'บทบาท');
+      .replace(/\brole\b/g, 'บทบาท')
+      .replace(/ชื่อและ\s+รหัสเข้าสู่ระบบ/g, 'ชื่อและรหัสเข้าสู่ระบบ');
   };
 
   const localize = root => {
