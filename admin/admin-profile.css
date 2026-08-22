@@ -1,0 +1,12 @@
+.admin-current-profile-card { display:grid; gap:18px; }
+.admin-current-profile-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.admin-current-profile-heading h2 { margin:0; }
+.admin-current-profile-heading p { margin:5px 0 0; }
+.admin-current-profile-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0; }
+.admin-current-profile-grid div { padding:13px; border:1px solid var(--admin-ui-line); border-radius:16px; background:#fffafb; }
+.admin-current-profile-grid dt { color:var(--admin-ui-muted); font-size:.78rem; }
+.admin-current-profile-grid dd { margin:5px 0 0; color:var(--admin-ui-ink); font-weight:850; overflow-wrap:anywhere; }
+.admin-current-profile-actions { display:flex; gap:10px; flex-wrap:wrap; padding-top:2px; }
+.admin-profile-signout { border-color:#efb6c1; color:#a92f46; }
+body[data-page="dashboard"] #signOut { display:none; }
+@media (max-width:640px) { .admin-current-profile-grid { grid-template-columns:1fr; } .admin-current-profile-actions .mpa-button { width:100%; } }

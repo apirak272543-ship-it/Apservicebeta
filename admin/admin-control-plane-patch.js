@@ -376,7 +376,24 @@
     addEventListener('pagehide', () => cancellationObserver.disconnect(), { once: true });
   }
 
-  window.APServiceAdminPatch = { dashboard: dashboardPatch, orders: ordersPatch, promotions: mediaCenterPatch, media: mediaCenterPatch };
+  function profilePatch() {
+    const R = runtime();
+    if (!R) return;
+    const content = `<div class="mpa-page-head"><div><p class="admin-page-eyebrow">ADMIN ACCOUNT</p><h1>โปรไฟล์ผู้ดูแล</h1><p>ตรวจข้อมูลบัญชีที่กำลังใช้งาน จัดการเซสชัน และไปยังบัญชีทุกบทบาทเมื่อต้องดูแลผู้ใช้อื่น</p></div></div><section class="mpa-card admin-current-profile-card" id="currentAdminProfile">${M.ui.loading('กำลังโหลดข้อมูลบัญชีผู้ดูแล…')}</section>`;
+    R.gate('profile', content).then(async access => {
+      if (!access) return;
+      R.user = access.user;
+      const fallback = { display_name: access.user?.user_metadata?.display_name || access.user?.email?.split('@')[0] || 'ผู้ดูแลระบบ', email: access.user?.email || '-', phone: '', created_at: '' };
+      let profile = fallback;
+      try { profile = { ...fallback, ...((await request(`user_profiles?select=display_name,email,phone,created_at&user_id=eq.${encodeURIComponent(access.user.id)}&limit=1`))?.[0] || {}) }; } catch (_) { /* Session identity remains sufficient for this self-account view. */ }
+      const host = document.querySelector('#currentAdminProfile');
+      if (!host) return;
+      host.innerHTML = `<div class="admin-current-profile-heading"><div><p class="admin-section-kicker">บัญชีที่กำลังใช้งาน</p><h2>${esc(profile.display_name || 'ผู้ดูแลระบบ')}</h2><p class="mpa-muted">${esc(profile.email || fallback.email)}</p></div><span class="mpa-badge">Admin</span></div><dl class="admin-current-profile-grid"><div><dt>สิทธิ์ปัจจุบัน</dt><dd>ผู้ดูแลระบบ</dd></div><div><dt>โทรศัพท์</dt><dd>${esc(profile.phone || 'ยังไม่ระบุ')}</dd></div><div><dt>เริ่มใช้งาน</dt><dd>${profile.created_at ? esc(new Date(profile.created_at).toLocaleDateString('th-TH')) : 'ไม่ระบุ'}</dd></div><div><dt>ความปลอดภัย</dt><dd>จัดการผ่านบัญชีที่ลงชื่อเข้าใช้</dd></div></dl><div class="admin-current-profile-actions"><a class="mpa-button mpa-button-secondary" href="accounts.html">บัญชีทุกบทบาท</a><button class="mpa-button mpa-button-secondary admin-profile-signout" type="button" id="profileSignOut">ออกจากระบบ</button></div>`;
+      document.querySelector('#profileSignOut')?.addEventListener('click', () => { if (window.confirm('ต้องการออกจากระบบผู้ดูแลใช่หรือไม่?')) M.auth.signOut('index.html'); });
+    }).catch(error => notice(error.message || 'โหลดโปรไฟล์ผู้ดูแลไม่สำเร็จ', 'error'));
+  }
+
+  window.APServiceAdminPatch = { dashboard: dashboardPatch, orders: ordersPatch, promotions: mediaCenterPatch, media: mediaCenterPatch, profile: profilePatch };
 })();
 
 /* The patch is intentionally loaded before admin-app.js. The base app exposes its

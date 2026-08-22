@@ -27,10 +27,10 @@ assert.match(accounts, /admin-accounts\.css\?v=accounts-v2/, 'Accounts route ต
 assert.match(accounts, /admin-app\.js\?v=admin-management-v9/, 'Accounts route ต้อง cache-bust runtime และ governance ล่าสุด');
 assert.match(accounts, /admin-override-governance\.js\?v=admin-override-v1/, 'Accounts route ต้องคง governance จากงานร่วม');
 assert.match(accounts, /admin-user-compact-ui\.js\?v=user-compact-v2/, 'Accounts route ต้องโหลด action sheet เวอร์ชันที่เก็บคำสั่งเดิมไว้');
-assert.match(profile, /data-page="accounts"/, 'profile route เดิมต้องเปิด Account Control Plane แทนหน้า 404');
-assert.match(profile, /admin-accounts\.css\?v=accounts-v2/, 'profile route ต้องโหลด style รายละเอียดบัญชีใหม่');
-assert.match(profile, /admin-app\.js\?v=admin-management-v9/, 'profile route ต้องโหลด runtime เวอร์ชันเดียวกับ Accounts');
-assert.match(profile, /admin-override-governance\.js\?v=admin-override-v1/, 'profile route ต้องคง governance จากงานร่วม');
+assert.match(profile, /data-page="profile"/, 'ปุ่ม Profile ต้องเปิด current-admin profile ที่ตรงข้อความของ navigation');
+assert.match(profile, /admin-profile\.css\?v=admin-profile-v1/, 'Profile route ต้องโหลด style สำหรับข้อมูลบัญชีปัจจุบัน');
+assert.match(profile, /admin-control-plane-patch\.js\?v=control-plane-v4-profile/, 'Profile route ต้อง cache-bust current-profile control-plane patch');
+assert.match(profile, /admin-app\.js\?v=admin-management-v10-profile/, 'Profile route ต้อง cache-bust runtime ที่รองรับ current-admin profile');
 assert.match(compactScript, /admin-user-compact-actions/, 'เมนูย่อบัญชีต้องเก็บปุ่มคำสั่งเดิมไว้เพื่อเปิด action sheet ได้');
 assert.match(styles, /\.admin-account-type-menu/, 'ต้องมี responsive style ของเมนูประเภทบัญชี');
 assert.match(styles, /\.admin-account-detail-list/, 'ต้องมีสไตล์รายการรายละเอียดบัญชี');
