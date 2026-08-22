@@ -11,5 +11,5 @@ assert.match(source, /\['Media registry', 'คลังสื่อ'\]/, 'Media 
 assert.match(source, /\['Banner โฆษณา', 'แบนเนอร์โฆษณา'\]/, 'Banner tab must be localized');
 assert.match(source, /\['Eyebrow', 'ข้อความกำกับ'\]/, 'Form labels must be localized');
 assert.match(source, /\['พื้นหลังหน้า Login', 'พื้นหลังหน้าลงชื่อเข้าใช้'\]/, 'Login-background tab must use Thai task language');
-assert.match(entrypoint, /content-studio-v5-thai-copy/, 'Media entrypoint must cache-bust the Thai Content Studio copy');
+assert.match(entrypoint, /content-studio-v6-thai-login-tab/, 'Media entrypoint must cache-bust the current Thai Content Studio copy');
 console.log('admin_media_thai_copy_contract_test: PASS');
