@@ -5,5 +5,7 @@ for (const [english, thai] of [['Login ID', 'รหัสเข้าสู่�
   if (!source.includes(`['${english}', '${thai}']`)) throw new Error(`Missing Account localization: ${english}`);
 }
 if (!source.includes("replace(/\\bkey สำคัญ/g, 'ข้อมูลสำคัญ')")) throw new Error('Missing key localization');
-if (!entrypoint.includes('admin-accounts-thai-copy-patch.js?v=accounts-thai-v1')) throw new Error('Accounts entrypoint must load Thai copy patch');
+if (!source.includes('การเพิ่ม/ผูกบัญชีไรเดอร์ต้องทำจาก')) throw new Error('Workflow copy must describe the Rider management destination once');
+if (!source.includes('href="riders.html"')) throw new Error('Workflow copy must preserve Rider management href');
+if (!entrypoint.includes('admin-accounts-thai-copy-patch.js?v=accounts-thai-v2-workflow')) throw new Error('Accounts entrypoint must cache-bust Thai workflow copy');
 console.log('admin_accounts_thai_copy_contract_test: PASS');

@@ -38,6 +38,15 @@
       const translated = translateText(input.placeholder);
       if (translated !== input.placeholder) input.placeholder = translated;
     });
+    const notes = [
+      ...(root.matches?.('.admin-account-flow-note') ? [root] : []),
+      ...(root.querySelectorAll?.('.admin-account-flow-note') || []),
+    ];
+    notes.forEach(note => {
+      if (note.dataset.thaiWorkflowCopy === 'true') return;
+      note.dataset.thaiWorkflowCopy = 'true';
+      note.innerHTML = '<b>การจัดการแยกตามประเภท:</b> เพิ่มผู้ดูแลและลูกค้าได้จากหน้านี้; การเพิ่ม/ผูกบัญชีร้านค้าต้องทำจาก <a href="stores.html">หน้าจัดการร้านค้า</a> และการเพิ่ม/ผูกบัญชีไรเดอร์ต้องทำจาก <a href="riders.html">หน้าจัดการไรเดอร์</a> เพื่อให้ความสัมพันธ์กับร้านหรืองานจัดส่งถูกบันทึกจากกฎกลาง';
+    });
   };
 
   const mount = () => {
