@@ -8,5 +8,6 @@ const patch = fs.readFileSync(path.join(root, 'admin', 'admin-login-validation-p
 
 assert.match(entry, /admin-login-validation-patch\.js\?v=admin-login-validation-v1/, 'Admin Login must load its submit-validation runtime patch');
 assert.match(patch, /form\.noValidate = true/, 'Admin Login must let its Thai validation handler receive empty-submit events');
+assert.match(patch, /new MutationObserver/, 'Async Admin Login render must receive the validation patch after its form is inserted');
 
 console.log('admin login submit validation contract: PASS');
