@@ -138,6 +138,7 @@
 .ap-login-field input,
 .auth-card input,
 .stack-form input { padding: 0 14px; }
+.ap-login-field .ap-login-control input { padding: 0 52px 0 62px; }
 .ap-login-control input:focus,
 .ap-login-field input:focus,
 .auth-card input:focus,
