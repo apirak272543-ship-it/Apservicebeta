@@ -185,7 +185,7 @@
     }
     if (!header.querySelector('.admin-color-trigger')) {
       const color = document.createElement('button');
-      color.type = 'button'; color.className = 'admin-command-trigger admin-color-trigger'; color.setAttribute('aria-label', 'ปรับสีข้อความ Banner'); color.innerHTML = '<span aria-hidden="true" class="admin-color-dot"></span><span>สีข้อความ</span>';
+      color.type = 'button'; color.className = 'admin-command-trigger admin-color-trigger'; color.setAttribute('aria-label', 'ปรับสีข้อความแบนเนอร์'); color.innerHTML = '<span aria-hidden="true" class="admin-color-dot"></span><span>สีข้อความ</span>';
       color.onclick = () => toggleColorPanel();
       header.append(color);
     }

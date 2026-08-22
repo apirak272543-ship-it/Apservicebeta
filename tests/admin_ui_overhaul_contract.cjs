@@ -6,7 +6,7 @@ const css = fs.readFileSync('admin/admin-ui-overhaul.css', 'utf8');
 const js = fs.readFileSync('admin/admin-ui-overhaul.js', 'utf8');
 
 assert.match(app, /admin-ui-overhaul\.css\?v=admin-ui-overhaul-v6/);
-assert.match(app, /admin-ui-overhaul\.js\?v=admin-ui-overhaul-v3/);
+assert.match(app, /admin-ui-overhaul\.js\?v=admin-ui-overhaul-v4-thai-a11y/);
 assert.match(css, /\.admin-command-backdrop/);
 assert.match(css, /\.admin-color-panel/);
 assert.match(css, /\.admin-table-search/);
@@ -23,6 +23,7 @@ assert.match(js, /data-mobile-quick/);
 assert.match(js, /recentSearches/);
 assert.match(js, /MutationObserver/);
 assert.match(js, /localStorage/);
+assert.match(js, /aria-label', 'ปรับสีข้อความแบนเนอร์'/);
 for (const file of fs.readdirSync('admin').filter(name => name.endsWith('.html'))) {
   const html = fs.readFileSync(`admin/${file}`, 'utf8');
   if (html.includes('admin-app.js')) assert.match(html, /overhaul=admin-ui-round2-v4/);
