@@ -10,7 +10,7 @@ const styles = fs.readFileSync(path.join(root, 'admin', 'admin-profile.css'), 'u
 const dashboard = fs.readFileSync(path.join(root, 'admin', 'dashboard.html'), 'utf8');
 
 assert.match(profile, /<body data-page="profile">/, 'Bottom Profile route must render a current-admin profile page, not the account directory');
-assert.match(profile, /admin-app\.js\?v=admin-source-v11/, 'Profile entrypoint must request the canonical runtime revision');
+assert.match(profile, /admin-app\.js\?v=admin-source-v12/, 'Profile entrypoint must request the canonical runtime revision');
 assert.match(runtime, /async function profile\(\)/, 'Admin runtime must own the current-admin profile route');
 assert.doesNotMatch(patch, /profile: profilePatch/, 'Control-plane patch must not own the current-admin profile route');
 assert.match(runtime, /id="profileSignOut"/, 'Profile must expose an intentional logout action');
