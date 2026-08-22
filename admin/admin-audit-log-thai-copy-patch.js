@@ -36,7 +36,7 @@
     nodes.forEach(node => {
       const parent = node.parentElement;
       if (parent?.closest('input,textarea,code,pre')) return;
-      const next = translateText(node.nodeValue);
+      const next = actions[String(node.nodeValue || '').trim()] || translateText(node.nodeValue);
       if (next !== node.nodeValue) node.nodeValue = next;
     });
     document.querySelectorAll('#auditAction').forEach(input => { input.placeholder = 'ตัวอย่าง: ปรับยอดกระเป๋าเงิน'; });
