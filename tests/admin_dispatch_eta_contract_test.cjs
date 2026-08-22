@@ -4,7 +4,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'admin/orders.html'), 'utf8');
 const patch = fs.readFileSync(path.join(root, 'admin/admin-control-plane-patch.js'), 'utf8');
-assert.match(page, /control-plane-v5-dispatch/, 'Orders must load the Dispatch/ETA cache-busted patch');
+assert.match(page, /control-plane-v6-thai-orders/, 'Orders must load the current cache-busted control-plane patch that retains Dispatch/ETA controls');
 assert.match(patch, /delivery_orders\?select=.*dispatch_status/, 'Admin Orders must query Dispatch fields');
 assert.match(patch, /function dispatchEditor/, 'Admin Orders must expose Dispatch/ETA editor');
 assert.match(patch, /manageOrder\(order, 'dispatch'/, 'Dispatch editor must use central manageOrder action');
