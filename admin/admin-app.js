@@ -283,7 +283,7 @@
     const load=async()=>{try{rows=await M.request('riders?select=id,name,phone,vehicle,status,note,updated_at&order=name.asc&limit=1000',{private:true})||[];render();}catch(error){host.innerHTML=M.ui.error('โหลดข้อมูล Rider ไม่สำเร็จ',error.message);}}; $('#addRider').onclick=()=>openForm(null); await load();
   }
   async function finance() {
-    const access = await gate('finance', `<div class="mpa-page-head"><div><h1>การเงินและคำขอถอน</h1><p>ตรวจสลิปแบบ in-app และติดตามคำขอถอนเงินตามสิทธิ์ Admin</p></div></div><section id="finance" class="mpa-card">${M.ui.loading('กำลังโหลดคิวการเงิน…')}</section>`); if (!access) return;
+    const access = await gate('finance', `<div class="mpa-page-head"><div><h1>การเงินและคำขอถอน</h1><p>ตรวจสลิปการชำระเงินและติดตามคำขอถอนเงินตามสิทธิ์ผู้ดูแล</p></div></div><section id="finance" class="mpa-card">${M.ui.loading('กำลังโหลดคิวการเงิน…')}</section>`); if (!access) return;
     const host = $('#finance');
     const orderOf = review => Array.isArray(review.delivery_orders) ? review.delivery_orders[0] || {} : review.delivery_orders || {};
     const showSlip = async review => {
