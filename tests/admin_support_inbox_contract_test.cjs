@@ -10,4 +10,6 @@ assert.match(inbox, /support_messages\?select=/, 'Support Inbox must load real m
 assert.match(inbox, /action: 'support_conversation'/, 'Support Inbox must use the central server action');
 assert.match(inbox, /support_action: 'reply'/, 'Support Inbox must support Admin replies');
 assert.match(inbox, /support_action: action/, 'Support Inbox must support close/reopen');
+assert.match(inbox, /if \(selected && !visible\.some\(row => row\.id === selected\.id\)\) selected = null;/, 'Support Inbox must clear stale detail when the selected conversation is filtered out');
+assert.match(inbox, /เลือกบทสนทนาเพื่อดูข้อความและตอบกลับ/, 'Support Inbox must show an empty detail state after the selected conversation is cleared');
 console.log('admin_support_inbox_contract_test: PASS');
