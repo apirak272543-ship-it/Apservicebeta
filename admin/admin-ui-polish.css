@@ -363,3 +363,6 @@ body {
     transition: none !important;
   }
 }
+
+/* Admin login: reserve text space around lock and reveal controls despite generic input padding. */
+#loginForm .ap-login-control > input { padding-left: 62px !important; padding-right: 52px !important; }
