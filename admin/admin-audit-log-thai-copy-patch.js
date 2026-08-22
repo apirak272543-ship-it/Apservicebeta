@@ -23,6 +23,10 @@
     account_reactivated: 'เปิดใช้งานบัญชี',
     provision_store_owner: 'สร้างร้านค้าและบัญชีเจ้าของร้าน',
     reset_rider_password: 'ตั้งรหัสผ่านไรเดอร์ใหม่',
+    rider_password_reset: 'ตั้งรหัสผ่านไรเดอร์ใหม่',
+    store_password_reset: 'ตั้งรหัสผ่านเจ้าของร้านใหม่',
+    managed_account_created: 'สร้างบัญชีที่จัดการโดยผู้ดูแล',
+    order_dispatch_updated: 'อัปเดตการจัดส่งออร์เดอร์',
   };
   const translateText = value => exact.get(String(value || '').trim()) || String(value || '');
   const apply = () => {
