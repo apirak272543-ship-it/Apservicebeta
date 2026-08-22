@@ -100,6 +100,16 @@
   }
 
   let currentPromotions = [];
+  function localizePromotionCopy(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      node.nodeValue = node.nodeValue
+        .replace(/\bBanner\b/g, 'แบนเนอร์')
+        .replace(/\bcarousel\b/g, 'แสดงสลับกัน');
+    });
+  }
   const blankPromotion = index => normalizePromotions([{ id: `promotion-${Date.now()}-${index + 1}`, active: true, badge: 'AD', title: '', description: '', image_url: '', alt_text: '', button_enabled: true, button_label: 'ดูรายละเอียด', link_url: '', priority: index + 1 }])[0];
 
   function renderPromotion(row, index) {
@@ -108,6 +118,7 @@
 
   function renderPromotionManager(host, promotions) {
     currentPromotions = promotions.slice();
+    queueMicrotask(() => localizePromotionCopy(host));
     host.innerHTML = `<div class="admin-promotion-toolbar"><div><strong>Banner ชุดสไลด์</strong><span class="mpa-muted">เพิ่มได้ไม่จำกัดจำนวน · มีมากกว่า 1 ใบจะแสดงเป็น carousel ที่หน้า Customer</span></div><button type="button" class="mpa-button" data-promotion-action="add">+ เพิ่ม Banner ใหม่</button></div><div class="admin-promotion-list">${currentPromotions.length ? currentPromotions.map(renderPromotion).join('') : '<div class="mpa-card"><p class="mpa-muted">ยังไม่มี Banner กด “เพิ่ม Banner ใหม่” เพื่อสร้างรายการแรก</p></div>'}</div>`;
     host.querySelectorAll('[data-promotion-action]').forEach(button => button.addEventListener('click', () => {
       const action = button.dataset.promotionAction;
@@ -158,6 +169,7 @@
     const copy = new Map([
       ['Hero และหน้าแรก', 'พื้นที่นำและหน้าแรก'], ['Header และตะกร้า', 'ส่วนบนและตะกร้า'], ['พื้นหลังหน้า Login', 'พื้นหลังหน้าลงชื่อเข้าใช้'], ['Banner โฆษณา', 'แบนเนอร์โฆษณา'], ['Media registry', 'คลังสื่อ'], ['CUSTOMER HOME', 'หน้าแรกของลูกค้า'], ['Hero หน้าแรก · พื้นหลังและข้อความหลัก', 'หน้าแรก · ภาพพื้นหลังและข้อความหลัก'], ['ควบคุมข้อความ ปุ่ม สี และภาพพื้นหลังหน้า Customer โดยไม่เปลี่ยน route guard หรือ business logic', 'ตั้งค่าข้อความ ปุ่ม สี และภาพพื้นหลังที่หน้าลูกค้าเห็น โดยคงการทำงานเดิมของระบบ'], ['Eyebrow', 'ข้อความกำกับ'], ['Overlay', 'ชั้นสีทับภาพ'], ['Primary label', 'ข้อความปุ่มหลัก'], ['Primary href', 'ปลายทางปุ่มหลัก'], ['เปิด Primary', 'แสดงปุ่มหลัก'], ['Secondary label', 'ข้อความปุ่มรอง'], ['Secondary href', 'ปลายทางปุ่มรอง'], ['เปิด Secondary', 'แสดงปุ่มรอง'], ['Hero background (รูปที่ 3)', 'ภาพพื้นหลังหน้าแรก (รูปที่ 3)'], ['Hero art/ภาพประกอบ', 'ภาพประกอบหน้าแรก'], ['SERVICE CATALOG', 'บริการและร้านค้า'], ['บริการ ร้านค้า และการ์ด Action', 'บริการ ร้านค้า และการ์ดการใช้งาน'], ['APP NAVIGATION', 'การนำทาง'], ['ปรับข้อความนำทางและ floating cart โดยไม่รวมกับส่วนแก้ไขสื่อ', 'ปรับข้อความนำทางและตะกร้าลอย โดยแยกจากการแก้ไขสื่อ'], ['PROMOTIONS', 'โฆษณา'], ['Banner โฆษณา · แก้ไขละเอียดทุกองค์ประกอบ', 'แบนเนอร์โฆษณา · ตั้งค่ารายละเอียดแต่ละรายการ'], ['แก้ทีละ Banner พร้อม preview, สถานะเปิด/ปิด และอัปโหลดผ่าน shared media pipeline', 'แก้ไขแบนเนอร์แต่ละรายการ พร้อมภาพตัวอย่าง สถานะเปิด/ปิด และอัปโหลดรูปภาพ'], ['MEDIA REGISTRY', 'คลังสื่อ'], ['Media registry ที่ตรวจพบ', 'คลังสื่อที่ตรวจพบ'], ['รายการนี้เป็นหลักฐานจาก media_assets จริง ไม่ได้หมายความว่าจะโหลดทุกไฟล์มาใช้ในหน้า Customer', 'แสดงรายการสื่อที่ลงทะเบียนไว้ในระบบ โดยไม่เปลี่ยนการแสดงผลหน้าลูกค้าจนกว่าจะบันทึกการตั้งค่า'], ['ยังไม่มี media registry', 'ยังไม่มีรายการสื่อ'], ['บันทึก Content และ Banner ทั้งหมด', 'บันทึกเนื้อหาและแบนเนอร์ทั้งหมด']
     ]);
+    copy.set('ข้อความบน Header และตะกร้า', 'ข้อความส่วนบนและตะกร้า');
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
