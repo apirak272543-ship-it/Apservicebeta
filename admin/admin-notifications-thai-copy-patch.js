@@ -16,6 +16,7 @@
     const status = document.querySelector('#notificationLastRefresh');
     if (status) {
       const next = status.textContent
+        .replace('ข้อมูลจาก event กลาง', 'ข้อมูลจากระบบส่วนกลาง')
         .replace('สถานะเป็นผลการส่ง event', 'สถานะเป็นผลการส่งแจ้งเตือน')
         .replace('อ่านแล้ว/ยังไม่อ่านอ้างอิงจาก read_at', 'สถานะการอ่านอ้างอิงจากข้อมูลการอ่าน');
       if (next !== status.textContent) status.textContent = next;
