@@ -6,6 +6,7 @@ const app = fs.readFileSync(path.join(root, 'admin/admin-app.js'), 'utf8');
 assert.match(app, /notificationsV2/, 'Admin must use the current Notifications workboard');
 assert.match(app, /mobile_notifications\?select=id,title,body,data,recipient_role,status,read_at,created_at,sent_at/, 'Admin must read delivery and read state fields');
 assert.match(app, /safeDeepLink/, 'Admin must validate notification deep links');
+assert.match(app, /url\.protocol !== 'https:'/ , 'Notification destinations must use HTTPS');
 assert.match(app, /url\.origin === location\.origin/, 'Notification destinations must stay same-origin');
 assert.match(app, /ไม่มีปลายทางที่ตรวจสอบได้ · อ่านอย่างเดียว/, 'Notifications without a validated destination must be explicitly read-only');
 assert.match(app, /const raw = String\(value \|\| ''\)\.trim\(\); if \(!raw\) return ''/, 'Empty notification deep links must not resolve to the current page');
