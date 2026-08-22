@@ -20,14 +20,14 @@
     button.type = 'button';
     button.className = 'admin-content-tab';
     button.dataset.contentTab = tab;
-    button.textContent = 'พื้นหลังหน้า Login';
+    button.textContent = 'พื้นหลังหน้าลงชื่อเข้าใช้';
     button.onclick = () => activate(form, tab);
     nav.insertBefore(button, nav.querySelector('[data-content-tab="registry"]') || null);
 
     const panel = document.createElement('section');
     panel.className = 'admin-content-panel';
     panel.dataset.contentPanel = tab;
-    panel.innerHTML = '<div class="admin-content-panel-head"><div><span class="admin-kicker">LOGIN MEDIA</span><h2>พื้นหลังหน้า Login และ GIF เทศกาล</h2><p class="mpa-muted">จัดการสื่อหน้าเข้าสู่ระบบของ Customer, Admin, Merchant, Rider และ AP Retail POS ในหมวดคลังสื่อเดียวกัน โดยคงระบบอัปโหลดและข้อมูลเดิมไว้</p></div></div><iframe class="admin-login-media-frame" title="จัดการสื่อพื้นหลังหน้า Login" src="login-media.html?embedded=1" loading="lazy"></iframe>';
+    panel.innerHTML = '<div class="admin-content-panel-head"><div><span class="admin-kicker">สื่อหน้าลงชื่อเข้าใช้</span><h2>ภาพพื้นหลังและภาพเคลื่อนไหวตามเทศกาล</h2><p class="mpa-muted">จัดการสื่อสำหรับหน้าลงชื่อเข้าใช้ของลูกค้า ผู้ดูแล ร้านค้า ไรเดอร์ และจุดขาย โดยใช้คลังสื่อเดียวกันและคงข้อมูลเดิมไว้</p></div></div><iframe class="admin-login-media-frame" title="จัดการสื่อพื้นหลังหน้าลงชื่อเข้าใช้" src="login-media.html?embedded=1" loading="lazy"></iframe>';
     registry.before(panel);
   }
 
