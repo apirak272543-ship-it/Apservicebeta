@@ -64,8 +64,7 @@
     R.gate('dashboard', content).then(async access => {
       if (!access) return;
       R.user = access.user;
-      const signOut = document.querySelector('#signOut');
-      if (signOut) signOut.onclick = () => M.auth.signOut('index.html');
+      document.querySelector('#signOut')?.remove();
       const count = async path => { try { return await M.requestCount(path, { private: true }); } catch (_) { return 0; } };
       const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0); const fetchRows = async path => { try { return await M.request(path, { private: true, cacheTtlMs: 15000 }); } catch (_) { return []; } }; const [orders, stores, riders, withdrawals, todayOrders, settlementRows] = await Promise.all([
         count('delivery_orders?select=id&status=neq.สำเร็จแล้ว'),
