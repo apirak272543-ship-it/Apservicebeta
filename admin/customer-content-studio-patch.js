@@ -107,7 +107,8 @@
     nodes.forEach(node => {
       node.nodeValue = node.nodeValue
         .replace(/\bBanner\b/g, 'แบนเนอร์')
-        .replace(/\bcarousel\b/g, 'แสดงสลับกัน');
+        .replace(/\bcarousel\b/g, 'แสดงสลับกัน')
+        .replace(/รูป\s+แบนเนอร์/g, 'รูปแบนเนอร์');
     });
   }
   const blankPromotion = index => normalizePromotions([{ id: `promotion-${Date.now()}-${index + 1}`, active: true, badge: 'AD', title: '', description: '', image_url: '', alt_text: '', button_enabled: true, button_label: 'ดูรายละเอียด', link_url: '', priority: index + 1 }])[0];
