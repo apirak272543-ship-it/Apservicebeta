@@ -366,3 +366,20 @@ body {
 
 /* Admin login: reserve text space around lock and reveal controls despite generic input padding. */
 #loginForm .ap-login-control > input { padding-left: 62px !important; padding-right: 52px !important; }
+
+/* Mock Login Button Style */
+#mockLoginBtn {
+  margin-top: 10px;
+  width: 100%;
+  font-weight: 700;
+  border-color: #d94a5d;
+  color: #b83149;
+  background: #fff0f3;
+  transition: all .18s ease;
+}
+
+#mockLoginBtn:hover {
+  background: #ffe3e8;
+  color: #8d2436;
+  transform: translateY(-1px);
+}
