@@ -133,6 +133,8 @@
     return body;
   }
   async function signIn(email, password) { const session = await authRequest('token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }); saveSession(session); return session; }
+  async function resetPassword(email) { if (!email) throw new Error('กรุณาระบุอีเมล'); return authRequest('recover', { method: 'POST', body: JSON.stringify({ email }) }); }
+  async function updatePassword(password) { if (!token()) throw new Error('กรุณาเข้าสู่ระบบก่อนเปลี่ยนรหัสผ่าน'); if (!password || password.length < 6) throw new Error('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร'); return authRequest('user', { method: 'PUT', headers: { Authorization: `Bearer ${token()}` }, body: JSON.stringify({ password }) }); }
   async function signUp({ email, password, data = {} } = {}) { const result = await authRequest('signup', { method: 'POST', body: JSON.stringify({ email, password, data }) }); if (result?.access_token) saveSession(result); return result; }
   async function currentUser() { let current = getSession(); if (!current?.access_token) return null; try { current = await refreshSession(false); if (!current?.access_token) return null; return await authRequest('user', { headers: { Authorization: `Bearer ${current.access_token}` } }); } catch { saveSession(null); return null; } }
   async function rolesFor(userId) { if (!userId || !token()) return []; const rows = await lifecycle.request(`user_roles?select=role&user_id=eq.${encodeURIComponent(userId)}`, { private: true, cacheTtlMs: 10_000 }); return (rows || []).map(row => row.role).filter(Boolean); }
