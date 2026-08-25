@@ -75,10 +75,69 @@
     return access;
   }
   async function login() {
-    document.body.innerHTML = `<main class="ap-login-shell"><section class="ap-login-card" data-login-panel="admin"><div class="ap-login-brandline"><span class="ap-login-mark">AS</span><div><strong>AP Service</strong><small>ศูนย์จัดการระบบและบัญชี</small></div></div><span class="ap-login-role">สำหรับผู้ดูแลระบบ</span><h1 class="ap-login-title">ยินดีต้อนรับกลับ</h1><p class="ap-login-intro">เข้าสู่ศูนย์จัดการเพื่อดูแลบัญชี ร้านค้า Rider การเงิน และการตั้งค่าระบบ</p><form id="loginForm" class="ap-login-form"><label class="ap-login-field"><span>ชื่อผู้ใช้ Admin</span><div class="ap-login-control"><span class="ap-login-icon" aria-hidden="true">${window.APLoginUI?.icon('user') || window.APLoginUI?.icon('mail') || ''}</span><input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="ชื่อผู้ใช้ Admin" placeholder="เช่น admin01" autofocus required></div></label><label class="ap-login-field"><span>รหัสผ่าน</span><div class="ap-login-control"><span class="ap-login-icon" aria-hidden="true">${window.APLoginUI?.icon('lock') || ''}</span><input id="password" type="password" autocomplete="current-password" aria-label="รหัสผ่าน" placeholder="กรอกรหัสผ่านของคุณ" required><button class="ap-login-password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="แสดงรหัสผ่าน">${window.APLoginUI?.icon('eye') || ''}</button></div></label><button class="ap-login-submit" data-login-submit type="submit">เข้าสู่ระบบ Admin</button><p class="ap-login-status" data-login-status aria-live="polite"></p><p class="ap-login-recovery-note">ลืมรหัสผ่าน? ติดต่อ Admin/ผู้ดูแลระบบเพื่อออกข้อมูลเข้าสู่ระบบใหม่</p></form><div class="ap-login-admin-note"><span aria-hidden="true">${window.APLoginUI?.icon('shield') || ''}</span><div><strong>บัญชี Admin เท่านั้น</strong><p>การสร้างหรือเปลี่ยนบัญชีผู้ใช้อื่นทำได้จากหน้าจัดการหลังเข้าสู่ระบบสำเร็จ</p></div></div><p class="ap-login-help">ใช้บัญชีผู้ดูแลระบบที่ได้รับสิทธิ์แล้วเพื่อเปิดหน้า Dashboard</p></section></main>`;
-    const loginForm = $('#loginForm');
-    window.APLoginUI?.enhance(loginForm);
-    loginForm.onsubmit = async event => { event.preventDefault(); const username = $('#username').value.trim(), password = $('#password').value; if (!username || !password) { const message = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ'; window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); return; } try { await M.auth.signInWithUsername(username, password, 'admin'); await window.APLoginUI?.showSuccess(loginForm, 'ยืนยันสิทธิ์ Admin สำเร็จ'); location.assign('dashboard.html'); } catch (error) { const raw = String(error?.message || ''); const message = /missing username|missing identifier|missing password|invalid login|invalid credentials|ชื่อผู้ใช้หรือรหัสผ่าน/i.test(raw) ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' : 'เข้าสู่ระบบ Admin ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'; window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); } };
+    const url = new URL(location.href);
+    const recoveryState = url.searchParams.get('recovery') || '';
+    const passwordReset = url.searchParams.get('password_reset') === '1';
+    let recoverySession = null;
+    if (recoveryState === '1' || recoveryState === 'update' || location.hash.includes('access_token=') || url.searchParams.get('type') === 'recovery') {
+      try { recoverySession = await M.auth.acceptRecoveryFromHash?.(); } catch (_) { recoverySession = null; }
+    }
+    const cardShell = content => `<main class="ap-login-shell"><section class="ap-login-card" data-login-panel="admin">${content}</section></main>`;
+    const header = `<div class="ap-login-brandline"><span class="ap-login-mark">AS</span><div><strong>AP Service</strong><small>ศูนย์จัดการระบบและบัญชี</small></div></div><span class="ap-login-role">สำหรับผู้ดูแลระบบ</span>`;
+    const backLink = `<a class="ap-login-recovery-note" href="index.html">← กลับเข้าสู่ระบบ Admin</a>`;
+    const render = mode => {
+      if (mode === 'request') {
+        document.body.innerHTML = cardShell(`${header}<h1 class="ap-login-title">ขอลิงก์ตั้งรหัสผ่านใหม่</h1><p class="ap-login-intro">กรอกอีเมลติดต่อที่ยืนยันกับบัญชี Admin ระบบจะส่งลิงก์แบบใช้ครั้งเดียวกลับมาที่หน้านี้</p><form id="adminRecoveryRequestForm" class="ap-login-form"><label class="ap-login-field"><span>อีเมลติดต่อที่ยืนยัน</span><div class="ap-login-control"><input id="recoveryEmail" name="email" type="email" autocomplete="email" aria-label="อีเมลติดต่อที่ยืนยัน" placeholder="name@example.com" required></div></label><button class="ap-login-submit" data-recovery-submit type="submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button><p class="ap-login-status" data-recovery-status aria-live="polite"></p></form>${backLink}<div class="ap-login-admin-note"><span aria-hidden="true">!</span><div><strong>ความปลอดภัยของบัญชี</strong><p>หากไม่มีอีเมลติดต่อที่ยืนยัน ให้ใช้ Account Control Plane หรือให้ผู้ดูแลระบบออก credential ใหม่</p></div></div>`);
+        const form = document.getElementById('adminRecoveryRequestForm');
+        const status = form.querySelector('[data-recovery-status]');
+        const submit = form.querySelector('[data-recovery-submit]');
+        form.addEventListener('submit', async event => {
+          event.preventDefault();
+          const email = form.elements.email.value.trim().toLowerCase();
+          if (!email) { status.textContent = 'กรุณากรอกอีเมลติดต่อ'; status.dataset.kind = 'error'; return; }
+          submit.disabled = true; status.textContent = 'กำลังส่งคำขอ…'; status.dataset.kind = 'loading';
+          try {
+            const redirectTo = new URL('index.html?recovery=1', document.baseURI).href;
+            await M.auth.resetPassword(email, redirectTo);
+            status.textContent = 'หากอีเมลนี้ได้รับอนุญาต ระบบได้ส่งลิงก์ตั้งรหัสผ่านใหม่แล้ว กรุณาตรวจ Inbox และ Spam';
+            status.dataset.kind = 'success';
+          } catch (_) {
+            status.textContent = 'ยังส่งคำขอไม่ได้ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่';
+            status.dataset.kind = 'error';
+          } finally { submit.disabled = false; }
+        });
+        return;
+      }
+      if (mode === 'update') {
+        document.body.innerHTML = cardShell(`${header}<h1 class="ap-login-title">ตั้งรหัสผ่าน Admin ใหม่</h1><p class="ap-login-intro">ลิงก์นี้ใช้ได้ครั้งเดียว ตั้งรหัสผ่านใหม่แล้วระบบจะออกจากเซสชันเพื่อให้เข้าสู่ระบบใหม่</p><form id="adminRecoveryUpdateForm" class="ap-login-form"><label class="ap-login-field"><span>รหัสผ่านใหม่</span><div class="ap-login-control"><input id="recoveryPassword" name="password" type="password" autocomplete="new-password" minlength="8" aria-label="รหัสผ่านใหม่" required></div></label><label class="ap-login-field"><span>ยืนยันรหัสผ่านใหม่</span><div class="ap-login-control"><input id="recoveryPasswordConfirm" name="confirm" type="password" autocomplete="new-password" minlength="8" aria-label="ยืนยันรหัสผ่านใหม่" required></div></label><button class="ap-login-submit" data-recovery-update-submit type="submit">บันทึกรหัสผ่านใหม่</button><p class="ap-login-status" data-recovery-status aria-live="polite"></p></form>${backLink}`);
+        const form = document.getElementById('adminRecoveryUpdateForm');
+        const status = form.querySelector('[data-recovery-status]');
+        const submit = form.querySelector('[data-recovery-update-submit]');
+        form.addEventListener('submit', async event => {
+          event.preventDefault();
+          const password = form.elements.password.value;
+          const confirm = form.elements.confirm.value;
+          if (password.length < 8) { status.textContent = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร'; status.dataset.kind = 'error'; return; }
+          if (password !== confirm) { status.textContent = 'รหัสผ่านใหม่ไม่ตรงกัน'; status.dataset.kind = 'error'; return; }
+          submit.disabled = true; status.textContent = 'กำลังบันทึกรหัสผ่านใหม่…'; status.dataset.kind = 'loading';
+          try {
+            await M.auth.updatePassword(password);
+            status.textContent = 'ตั้งรหัสผ่านใหม่สำเร็จ กำลังพากลับเข้าสู่ระบบ…'; status.dataset.kind = 'success';
+            setTimeout(() => M.auth.signOut('index.html?password_reset=1'), 700);
+          } catch (_) {
+            status.textContent = 'ลิงก์หมดอายุหรือเซสชันไม่สมบูรณ์ กรุณาขอลิงก์ใหม่อีกครั้ง'; status.dataset.kind = 'error'; submit.disabled = false;
+          }
+        });
+        return;
+      }
+      document.body.innerHTML = cardShell(`${header}<h1 class="ap-login-title">ยินดีต้อนรับกลับ</h1><p class="ap-login-intro">เข้าสู่ศูนย์จัดการเพื่อดูแลบัญชี ร้านค้า Rider การเงิน และการตั้งค่าระบบ</p><form id="loginForm" class="ap-login-form"><label class="ap-login-field"><span>ชื่อผู้ใช้ Admin</span><div class="ap-login-control"><input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="ชื่อผู้ใช้ Admin" placeholder="เช่น admin01" autofocus required></div></label><label class="ap-login-field"><span>รหัสผ่าน</span><div class="ap-login-control"><input id="password" type="password" autocomplete="current-password" aria-label="รหัสผ่าน" placeholder="กรอกรหัสผ่านของคุณ" required><button class="ap-login-password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="แสดงรหัสผ่าน">${window.APLoginUI?.icon('eye') || ''}</button></div></label><button class="ap-login-submit" data-login-submit type="submit">เข้าสู่ระบบ Admin</button><p class="ap-login-status" data-login-status aria-live="polite">${passwordReset ? 'ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่' : ''}</p><a class="ap-login-recovery-note" data-admin-recovery-link href="index.html?recovery=request">ลืมรหัสผ่าน? ส่งลิงก์ตั้งรหัสผ่านใหม่</a></form><div class="ap-login-admin-note"><span aria-hidden="true">!</span><div><strong>บัญชี Admin เท่านั้น</strong><p>การสร้างหรือเปลี่ยนบัญชีผู้ใช้อื่นทำได้จากหน้าจัดการหลังเข้าสู่ระบบสำเร็จ</p></div></div><p class="ap-login-help">ใช้บัญชีผู้ดูแลระบบที่ได้รับสิทธิ์แล้วเพื่อเปิดหน้า Dashboard</p>`);
+      const loginForm = document.getElementById('loginForm');
+      window.APLoginUI?.enhance(loginForm);
+      loginForm.onsubmit = async event => { event.preventDefault(); const username = document.getElementById('username').value.trim(), password = document.getElementById('password').value; const status = loginForm.querySelector('[data-login-status]'); const submit = loginForm.querySelector('[data-login-submit]'); if (!username || !password) { const message = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ'; window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); return; } submit.disabled = true; try { await M.auth.signInWithUsername(username, password, 'admin'); await window.APLoginUI?.showSuccess(loginForm, 'ยืนยันสิทธิ์ Admin สำเร็จ'); location.assign('dashboard.html'); } catch (error) { const raw = String(error?.message || ''); const message = /missing username|missing identifier|missing password|invalid login|invalid credentials|ชื่อผู้ใช้หรือรหัสผ่าน/i.test(raw) ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' : 'เข้าสู่ระบบ Admin ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'; window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); status.textContent = message; status.dataset.kind = 'error'; submit.disabled = false; } };
+    };
+    if (recoverySession || recoveryState === '1' || recoveryState === 'update') { render('update'); return; }
+    if (recoveryState === 'request') { render('request'); return; }
+    render('login');
   }
   async function profile() {
     const access = await gate('profile', `<div class="mpa-page-head"><div><p class="admin-page-eyebrow">ADMIN ACCOUNT</p><h1>โปรไฟล์ผู้ดูแล</h1><p>ตรวจข้อมูลบัญชีที่กำลังใช้งาน จัดการเซสชัน และไปยังบัญชีทุกบทบาทเมื่อต้องดูแลผู้ใช้อื่น</p></div></div><section class="mpa-card admin-current-profile-card" id="currentAdminProfile">${M.ui.loading('กำลังโหลดข้อมูลบัญชีผู้ดูแล…')}</section>`);
