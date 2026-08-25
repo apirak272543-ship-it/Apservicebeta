@@ -87,14 +87,14 @@
     const backLink = `<a class="ap-login-recovery-note" href="index.html">← กลับเข้าสู่ระบบ Admin</a>`;
     const render = mode => {
       if (mode === 'request') {
-        document.body.innerHTML = cardShell(`${header}<h1 class="ap-login-title">ขอลิงก์ตั้งรหัสผ่านใหม่</h1><p class="ap-login-intro">กรอกอีเมลติดต่อที่ยืนยันกับบัญชี Admin ระบบจะส่งลิงก์แบบใช้ครั้งเดียวกลับมาที่หน้านี้</p><form id="adminRecoveryRequestForm" class="ap-login-form"><label class="ap-login-field"><span>อีเมลติดต่อที่ยืนยัน</span><div class="ap-login-control"><input id="recoveryEmail" name="email" type="email" autocomplete="email" aria-label="อีเมลติดต่อที่ยืนยัน" placeholder="name@example.com" required></div></label><button class="ap-login-submit" data-recovery-submit type="submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button><p class="ap-login-status" data-recovery-status aria-live="polite"></p></form>${backLink}<div class="ap-login-admin-note"><span aria-hidden="true">!</span><div><strong>ความปลอดภัยของบัญชี</strong><p>หากไม่มีอีเมลติดต่อที่ยืนยัน ให้ใช้ Account Control Plane หรือให้ผู้ดูแลระบบออก credential ใหม่</p></div></div>`);
+        document.body.innerHTML = cardShell(`${header}<h1 class="ap-login-title">ขอลิงก์ตั้งรหัสผ่านใหม่</h1><p class="ap-login-intro">กรอกอีเมลยืนยันที่ผูกกับบัญชี Admin (อีเมลเดียวกับที่ใช้สร้างบัญชี) ระบบจะส่งลิงก์แบบใช้ครั้งเดียวกลับมาที่หน้านี้</p><form id="adminRecoveryRequestForm" class="ap-login-form"><label class="ap-login-field"><span>อีเมลยืนยันของบัญชี Admin</span><div class="ap-login-control"><input id="recoveryEmail" name="email" type="email" autocomplete="email" aria-label="อีเมลยืนยันของบัญชี Admin" placeholder="name@example.com" required></div></label><button class="ap-login-submit" data-recovery-submit type="submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button><p class="ap-login-status" data-recovery-status aria-live="polite"></p></form>${backLink}<div class="ap-login-admin-note"><span aria-hidden="true">!</span><div><strong>ความปลอดภัยของบัญชี</strong><p>หากบัญชีไม่มีอีเมลยืนยันที่ใช้กับ Auth ให้ใช้ Account Control Plane หรือให้ผู้ดูแลระบบออก credential ใหม่</p></div></div>`);
         const form = document.getElementById('adminRecoveryRequestForm');
         const status = form.querySelector('[data-recovery-status]');
         const submit = form.querySelector('[data-recovery-submit]');
         form.addEventListener('submit', async event => {
           event.preventDefault();
           const email = form.elements.email.value.trim().toLowerCase();
-          if (!email) { status.textContent = 'กรุณากรอกอีเมลติดต่อ'; status.dataset.kind = 'error'; return; }
+          if (!email) { status.textContent = 'กรุณากรอกอีเมลยืนยันของบัญชี Admin'; status.dataset.kind = 'error'; return; }
           submit.disabled = true; status.textContent = 'กำลังส่งคำขอ…'; status.dataset.kind = 'loading';
           try {
             const redirectTo = new URL('index.html?recovery=1', document.baseURI).href;
