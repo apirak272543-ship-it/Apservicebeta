@@ -13,7 +13,8 @@
   const normalizePath = path => String(path || '').replace(/^\/+/, '');
 
   function getSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; } }
-  function saveSession(session) { if (session?.access_token) localStorage.setItem(SESSION_KEY, JSON.stringify(session)); else localStorage.removeItem(SESSION_KEY); }
+  function sanitizeSession(session) { if (!session || typeof session !== 'object') return session; const safe = { ...session }; if (safe.user && typeof safe.user === 'object') { safe.user = { ...safe.user }; delete safe.user.email; delete safe.user.phone; } return safe; }
+  function saveSession(session) { if (session?.access_token) localStorage.setItem(SESSION_KEY, JSON.stringify(sanitizeSession(session))); else localStorage.removeItem(SESSION_KEY); }
   function token() { return getSession()?.access_token || ''; }
   function actorCacheKey() { return getSession()?.user?.id || 'anon'; }
 
@@ -26,7 +27,7 @@
     const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Authorization: `Bearer ${current.refresh_token}` }, body: JSON.stringify({ refresh_token: current.refresh_token }) });
     const next = await response.json().catch(() => null);
     if (!response.ok || !next?.access_token) { saveSession(null); throw new Error(next?.error_description || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
-    saveSession(next); return next;
+    const safeNext = sanitizeSession(next); saveSession(safeNext); return safeNext;
   }
 
   const lifecycle = (() => {
@@ -132,7 +133,8 @@
     if (!response.ok) throw new Error(body?.msg || body?.message || 'ไม่สามารถยืนยันตัวตนได้');
     return body;
   }
-  async function signIn(email, password) { const session = await authRequest('token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }); saveSession(session); return session; }
+  async function signIn(email, password) { const session = await authRequest('token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) }); const safeSession = sanitizeSession(session); saveSession(safeSession); return safeSession; }
+  async function signInWithUsername(username, password, role) { const identifier = String(username || '').trim().toLowerCase(); if (!identifier || !password || !role) throw new Error('กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน'); const response = await fetch(`${SUPABASE_URL}/functions/v1/role-access`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'login', role, identifier, password }) }); const body = await response.json().catch(() => null); if (!response.ok || !body?.session?.access_token) throw new Error(body?.error || 'ไม่สามารถยืนยันชื่อผู้ใช้และรหัสผ่านได้'); const safeSession = sanitizeSession(body.session); saveSession(safeSession); return safeSession; }
   async function resetPassword(email) { if (!email) throw new Error('กรุณาระบุอีเมล'); return authRequest('recover', { method: 'POST', body: JSON.stringify({ email }) }); }
   async function updatePassword(password) { if (!token()) throw new Error('กรุณาเข้าสู่ระบบก่อนเปลี่ยนรหัสผ่าน'); if (!password || password.length < 6) throw new Error('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร'); return authRequest('user', { method: 'PUT', headers: { Authorization: `Bearer ${token()}` }, body: JSON.stringify({ password }) }); }
   async function signUp({ email, password, data = {} } = {}) { const result = await authRequest('signup', { method: 'POST', body: JSON.stringify({ email, password, data }) }); if (result?.access_token) saveSession(result); return result; }
@@ -150,7 +152,7 @@
   function setNotice(message, kind = 'success') { let host = document.getElementById('mpa-toast'); if (!host) { host = document.createElement('div'); host.id = 'mpa-toast'; host.className = 'mpa-toast'; document.body.append(host); } host.className = `mpa-toast ${kind}`; host.textContent = message; host.hidden = false; clearTimeout(setNotice.timer); setNotice.timer = setTimeout(() => { host.hidden = true; }, 4200); }
   const cart = { key: 'apservice_mpa_cart_v1', read() { try { return JSON.parse(sessionStorage.getItem(this.key) || '[]'); } catch { return []; } }, write(items) { sessionStorage.setItem(this.key, JSON.stringify(items)); root.dispatchEvent(new CustomEvent('apservice:cart')); }, add(item) { const items = this.read(); const index = items.findIndex(row => row.id === item.id && row.storeId === item.storeId); if (index >= 0) items[index].qty += 1; else items.push({ ...item, qty: 1 }); this.write(items); }, clear() { this.write([]); }, total() { return this.read().reduce((sum, row) => sum + Number(row.price || 0) * Number(row.qty || 0), 0); } };
 
-  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v3', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, requestCount: lifecycle.requestCount, network: lifecycle, auth: { getSession, refreshSession, signIn, signUp, signOut, confirmSignOut, currentUser, rolesFor, requireRole }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
+  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v3', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, requestCount: lifecycle.requestCount, network: lifecycle, auth: { getSession, refreshSession, signIn, signInWithUsername, resetPassword, updatePassword, signUp, signOut, confirmSignOut, currentUser, rolesFor, requireRole }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
   function installImageSourceChoices() {
     const isImageInput = input => input?.matches?.('input[type="file"]') && /image\//i.test(String(input.getAttribute('accept') || ''));
     const existingSourceControl = input => /^(เลือกจากคลัง|ถ่ายรูป|เปลี่ยนจากคลัง|ถ่ายรูปใหม่)/.test(String(input.closest('label')?.textContent || '').replace(/\s+/g, ' ').trim()) || Boolean(input.closest('[data-image-source-choices]'));

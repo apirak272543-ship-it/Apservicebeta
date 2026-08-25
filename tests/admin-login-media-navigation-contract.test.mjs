@@ -14,8 +14,8 @@ const loginMediaRuntime = read('admin/login-media.js');
 assert.match(adminApp, /สำหรับผู้ดูแลระบบ/, 'Admin Login ต้องใช้คำอธิบายบทบาทสำหรับผู้ใช้');
 assert.doesNotMatch(adminApp, /Admin Control Plane/, 'Admin Login ต้องไม่เผยศัพท์ implementation บน public screen');
 assert.doesNotMatch(adminApp, /สิทธิ์ Admin จาก Backend/, 'Admin Login ต้องไม่เผยรายละเอียด backend บน public screen');
-assert.match(adminApp, /กรุณากรอกอีเมลและรหัสผ่านให้ครบ/, 'Admin Login ต้องแจ้งเมื่อกรอกข้อมูลไม่ครบก่อนเรียก sign-in');
-assert.match(adminApp, /อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่/, 'Admin Login ต้อง map provider credential error เป็นภาษาไทย');
+assert.match(adminApp, /กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ/, 'Admin Login ต้องแจ้งเมื่อกรอกข้อมูลไม่ครบก่อนเรียก sign-in');
+assert.match(adminApp, /ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่/, 'Admin Login ต้อง map provider credential error เป็นภาษาไทย');
 assert.match(adminApp, /เข้าสู่ระบบ Admin ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง/, 'Admin Login ต้องมีข้อความ fallback ที่ไม่เผย raw provider error');
 
 assert.ok(existsSync(resolve(root, 'admin/admin-retail.html')), 'Retail management page must exist at admin/admin-retail.html');
