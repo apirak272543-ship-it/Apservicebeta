@@ -20,10 +20,12 @@ assert.match(owner, /uploadPublicCatalogImage\(file/, 'รูปเมนูต�
 assert.match(owner, /mediaType: 'MENU_IMAGE'/, 'รูปเมนูต้องลงทะเบียนด้วย media type ที่ถูกต้อง');
 assert.match(owner, /ownerType: 'admin'/, 'Admin menu media ต้องรักษา owner boundary');
 assert.match(owner, /itemForm\.onsubmit = async event =>/, 'เมนูต้องยังมี explicit form Save แยกจาก file selection');
+assert.match(owner, /dialog\.backdrop\.querySelectorAll\('\[data-add-menu\]'\)/, 'ปุ่มเพิ่มเมนูทั้ง header และ empty-state ต้อง bind ภายใน menu dialog');
+assert.ok(owner.indexOf("dialog.backdrop.querySelectorAll('[data-add-menu]')") < owner.indexOf("dialog.backdrop.querySelectorAll('[data-import-menu-image]')"), 'Add menu binding ต้องอยู่ใน renderItems ก่อน import binding');
 assert.ok(owner.indexOf("setMediaPreview(previewBlobUrl, 'local')") < owner.indexOf('const uploaded = await window.APServiceMedia.uploadPublicCatalogImage'), 'local preview ต้องถูกตั้งก่อนรอ shared upload');
 assert.ok(owner.indexOf('clearPreviewBlob();\n        setMediaPreview(uploaded.publicUrl, \'remote\')') > owner.indexOf('const uploaded = await window.APServiceMedia.uploadPublicCatalogImage'), 'remote preview ต้องตั้งหลัง shared upload สำเร็จ');
 
-const patchTag = '<script src="admin-menu-management-patch.js?v=menu-management-v1"></script>';
+const patchTag = '<script src="admin-menu-management-patch.js?v=menu-management-v2"></script>';
 const adminTag = '<script src="admin-app.js?v=admin-source-v12';
 assert.ok(stores.indexOf(patchTag) >= 0, 'Stores route ต้องโหลด dedicated menu owner');
 assert.ok(stores.indexOf(patchTag) < stores.indexOf(adminTag), 'dedicated menu owner ต้องโหลดก่อน admin-app เพื่อ bind route อย่าง canonical');

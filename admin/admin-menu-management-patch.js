@@ -81,7 +81,7 @@
         notice(`${row.name} ${row.available ? 'เปิดขายแล้ว' : 'ปิดการขายแล้ว'}`);
       } catch (error) { button.disabled = false; notice(`อัปเดตสถานะเมนูไม่สำเร็จ: ${error.message}`, 'error'); }
     });
-    host.querySelectorAll('[data-add-menu]').forEach(button => button.onclick = () => openItemForm(dialog, store, null));
+    dialog.backdrop.querySelectorAll('[data-add-menu]').forEach(button => button.onclick = () => openItemForm(dialog, store, null));
     dialog.backdrop.querySelectorAll('[data-import-menu-image]').forEach(button => button.onclick = () => openLocalOcrImport(dialog, store));
   }
 
