@@ -134,8 +134,11 @@
   }
 
   function attachMediaInputs(host, access, refresh) {
-    host.querySelectorAll('[data-media-input]').forEach(input => input.onchange = async event => {
-      const file = event.target.files?.[0];
+    if (host.__apMediaChangeHandler) host.removeEventListener('change', host.__apMediaChangeHandler);
+    const handleMediaChange = async event => {
+      const input = event.target?.closest?.('[data-media-input]');
+      if (!input || !host.contains(input)) return;
+      const file = input.files?.[0];
       if (!file) return;
       const name = input.dataset.mediaField;
       const status = host.querySelector(`[data-media-status="${CSS.escape(name)}"]`);
@@ -158,7 +161,9 @@
       } finally {
         event.target.value = '';
       }
-    });
+    };
+    host.addEventListener('change', handleMediaChange);
+    host.__apMediaChangeHandler = handleMediaChange;
     host.querySelectorAll('[data-content-field]').forEach(input => {
       if (input.type !== 'url') return;
       input.oninput = () => { const preview = host.querySelector(`[data-media-preview="${CSS.escape(input.dataset.contentField)}"]`); if (preview && /^https:\/\//i.test(input.value.trim())) preview.innerHTML = `<img src="${esc(input.value.trim())}" alt="ตัวอย่างรูป">`; };
