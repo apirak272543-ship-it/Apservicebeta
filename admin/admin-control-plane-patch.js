@@ -375,7 +375,7 @@
     addEventListener('pagehide', () => cancellationObserver.disconnect(), { once: true });
   }
 
-  window.APServiceAdminPatch = { dashboard: dashboardPatch, orders: ordersPatch, promotions: mediaCenterPatch, media: mediaCenterPatch };
+  window.APServiceAdminPatch = { dashboard: dashboardPatch, orders: ordersPatch, media: mediaCenterPatch };
 })();
 
 /* The patch is intentionally loaded before admin-app.js. The base app exposes its
