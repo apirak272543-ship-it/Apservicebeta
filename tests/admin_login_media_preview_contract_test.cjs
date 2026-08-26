@@ -8,6 +8,7 @@ const runtime = fs.readFileSync(path.join(root, 'admin/login-media.js'), 'utf8')
 const sharedMediaUi = fs.readFileSync(path.join(root, 'shared/ap-service-mpa.js'), 'utf8');
 
 assert.match(page, /id="login-media-file" type="file" accept="image\/\*"/, 'Login producer must retain the image file input');
+assert.match(page, /login-media\.js\?v=login-media-preview-v1/, 'Login producer must cache-bust its preview runtime after canonical changes');
 assert.match(sharedMediaUi, /data-image-source-choices/, 'Shared MPA UI must provide canonical source-choice controls');
 assert.match(sharedMediaUi, /เลือกจากคลังภาพ/, 'Shared MPA UI must provide a library chooser');
 assert.match(sharedMediaUi, /ถ่ายรูปด้วยกล้อง/, 'Shared MPA UI must provide a camera chooser');
