@@ -47,6 +47,7 @@ const EDITABLE_ORDER_STATUSES = new Set([ORDER_STATUS.PAYMENT_REVIEW, ORDER_STAT
 
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers: corsHeaders })
 const isRole = (value: unknown): value is Role => value === 'rider' || value === 'store_owner'
+const isLoginRole = (value: unknown): value is Role | 'admin' => value === 'rider' || value === 'store_owner' || value === 'admin'
 const isManagedRole = (value: unknown): value is ManagedRole => value === 'customer' || value === 'rider' || value === 'store_owner' || value === 'admin'
 const normalizedId = (value: unknown) => String(value || '').trim().toLowerCase()
 const looksLikeEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -75,7 +76,7 @@ Deno.serve(async (request) => {
 
     if (body.action === 'login') {
       const role = body.role, identifier = normalizedId(body.identifier), password = String(body.password || '')
-      if (!isRole(role) || !identifier || !password) return json({ error: 'กรุณากรอกข้อมูลเข้าสู่ระบบให้ครบถ้วน' }, 400)
+      if (!isLoginRole(role) || !identifier || !password) return json({ error: 'กรุณากรอกข้อมูลเข้าสู่ระบบให้ครบถ้วน' }, 400)
       const profileResult = looksLikeEmail(identifier)
         ? await admin.from('user_profiles').select('user_id,email,login_id').eq('email', identifier).maybeSingle()
         : await admin.from('user_profiles').select('user_id,email,login_id').ilike('login_id', identifier).maybeSingle()
@@ -85,12 +86,20 @@ Deno.serve(async (request) => {
       if (!roleRow) return json({ error: 'บัญชีนี้ไม่มีสิทธิ์ใช้งานแอปที่เลือก' }, 403)
       const { data: accountControl } = await admin.from('account_controls').select('status,suspension_reason').eq('user_id', profile.user_id).maybeSingle()
       if (accountControl?.status === 'suspended') return json({ error: `บัญชีนี้ถูกระงับ${accountControl.suspension_reason ? `: ${accountControl.suspension_reason}` : ''}` }, 403)
-      const entityResult = role === 'rider' ? await admin.from('riders').select('id').eq('user_id', profile.user_id).maybeSingle() : await admin.from('stores').select('id').eq('owner_id', profile.user_id).maybeSingle()
-      if (entityResult.error || !entityResult.data) return json({ error: 'บัญชีนี้ยังไม่ได้ผูกกับข้อมูลการทำงาน โปรดติดต่อผู้ดูแล' }, 403)
+      let entityId: string | null = null
+      if (role === 'rider') {
+        const entityResult = await admin.from('riders').select('id').eq('user_id', profile.user_id).maybeSingle()
+        if (entityResult.error || !entityResult.data) return json({ error: 'บัญชีนี้ยังไม่ได้ผูกกับข้อมูลการทำงาน โปรดติดต่อผู้ดูแล' }, 403)
+        entityId = entityResult.data.id
+      } else if (role === 'store_owner') {
+        const entityResult = await admin.from('stores').select('id').eq('owner_id', profile.user_id).maybeSingle()
+        if (entityResult.error || !entityResult.data) return json({ error: 'บัญชีนี้ยังไม่ได้ผูกกับข้อมูลการทำงาน โปรดติดต่อผู้ดูแล' }, 403)
+        entityId = entityResult.data.id
+      }
       const auth = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
       const { data: signedIn, error: signInError } = await auth.auth.signInWithPassword({ email: profile.email, password })
       if (signInError || !signedIn.session) return json({ error: 'อีเมล/รหัส ID หรือรหัสผ่านไม่ถูกต้อง' }, 401)
-      return json({ session: signedIn.session, user: signedIn.user, role, entity_id: entityResult.data.id, login_id: profile.login_id })
+      return json({ session: signedIn.session, user: signedIn.user, role, entity_id: entityId, login_id: profile.login_id })
     }
 
     const accessToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')

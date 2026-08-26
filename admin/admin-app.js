@@ -4,6 +4,7 @@
   const C = window.APServiceCore;
   const $ = selector => document.querySelector(selector);
   const h = M.ui.escapeHtml;
+  const isEmailIdentifier = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
   if (!document.getElementById('admin-modern-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-modern-theme-style" rel="stylesheet" href="admin-modern-theme.css?v=admin-complete-ui-v2">');
   if (!document.getElementById('admin-social-mobile-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-social-mobile-style" rel="stylesheet" href="admin-social-mobile.css?v=admin-social-mobile-v1">');
   if (!document.getElementById('admin-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="admin-theme-style" rel="stylesheet" href="admin-theme.css?v=admin-theme-v2">');
@@ -130,10 +131,29 @@
         });
         return;
       }
-      document.body.innerHTML = cardShell(`${header}<h1 class="ap-login-title">ยินดีต้อนรับกลับ</h1><p class="ap-login-intro">เข้าสู่ศูนย์จัดการเพื่อดูแลบัญชี ร้านค้า Rider การเงิน และการตั้งค่าระบบ</p><form id="loginForm" class="ap-login-form"><label class="ap-login-field"><span>ชื่อผู้ใช้ Admin</span><div class="ap-login-control"><input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="ชื่อผู้ใช้ Admin" placeholder="เช่น admin01" autofocus required></div></label><label class="ap-login-field"><span>รหัสผ่าน</span><div class="ap-login-control"><input id="password" type="password" autocomplete="current-password" aria-label="รหัสผ่าน" placeholder="กรอกรหัสผ่านของคุณ" required><button class="ap-login-password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="แสดงรหัสผ่าน">${window.APLoginUI?.icon('eye') || ''}</button></div></label><button class="ap-login-submit" data-login-submit type="submit">เข้าสู่ระบบ Admin</button><p class="ap-login-status" data-login-status aria-live="polite">${passwordReset ? 'ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่' : ''}</p><a class="ap-login-recovery-note" data-admin-recovery-link href="index.html?recovery=request">ลืมรหัสผ่าน? ส่งลิงก์ตั้งรหัสผ่านใหม่</a></form><div class="ap-login-admin-note"><span aria-hidden="true">!</span><div><strong>บัญชี Admin เท่านั้น</strong><p>การสร้างหรือเปลี่ยนบัญชีผู้ใช้อื่นทำได้จากหน้าจัดการหลังเข้าสู่ระบบสำเร็จ</p></div></div><p class="ap-login-help">ใช้บัญชีผู้ดูแลระบบที่ได้รับสิทธิ์แล้วเพื่อเปิดหน้า Dashboard</p>`);
+      document.body.innerHTML = cardShell(`${header}<h1 class="ap-login-title">ยินดีต้อนรับกลับ</h1><p class="ap-login-intro">เข้าสู่ศูนย์จัดการเพื่อดูแลบัญชี ร้านค้า Rider การเงิน และการตั้งค่าระบบ</p><form id="loginForm" class="ap-login-form"><label class="ap-login-field"><span>อีเมลหรือชื่อผู้ใช้ Admin</span><div class="ap-login-control"><input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="อีเมลหรือชื่อผู้ใช้ Admin" placeholder="name@example.com หรือ admin01" autofocus required></div></label><label class="ap-login-field"><span>รหัสผ่าน</span><div class="ap-login-control"><input id="password" type="password" autocomplete="current-password" aria-label="รหัสผ่าน" placeholder="กรอกรหัสผ่านของคุณ" required><button class="ap-login-password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="แสดงรหัสผ่าน">${window.APLoginUI?.icon('eye') || ''}</button></div></label><button class="ap-login-submit" data-login-submit type="submit">เข้าสู่ระบบ Admin</button><p class="ap-login-status" data-login-status aria-live="polite">${passwordReset ? 'ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่' : ''}</p><a class="ap-login-recovery-note" data-admin-recovery-link href="index.html?recovery=request">ลืมรหัสผ่าน? ส่งลิงก์ตั้งรหัสผ่านใหม่</a></form><div class="ap-login-admin-note"><span aria-hidden="true">!</span><div><strong>บัญชี Admin เท่านั้น</strong><p>การสร้างหรือเปลี่ยนบัญชีผู้ใช้อื่นทำได้จากหน้าจัดการหลังเข้าสู่ระบบสำเร็จ</p></div></div><p class="ap-login-help">ใช้บัญชีผู้ดูแลระบบที่ได้รับสิทธิ์แล้วเพื่อเปิดหน้า Dashboard</p>`);
       const loginForm = document.getElementById('loginForm');
       window.APLoginUI?.enhance(loginForm);
-      loginForm.onsubmit = async event => { event.preventDefault(); const username = document.getElementById('username').value.trim(), password = document.getElementById('password').value; const status = loginForm.querySelector('[data-login-status]'); const submit = loginForm.querySelector('[data-login-submit]'); if (!username || !password) { const message = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ'; window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); return; } submit.disabled = true; try { await M.auth.signInWithUsername(username, password, 'admin'); await window.APLoginUI?.showSuccess(loginForm, 'ยืนยันสิทธิ์ Admin สำเร็จ'); location.assign('dashboard.html'); } catch (error) { const raw = String(error?.message || ''); const message = /missing username|missing identifier|missing password|invalid login|invalid credentials|ชื่อผู้ใช้หรือรหัสผ่าน/i.test(raw) ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' : 'เข้าสู่ระบบ Admin ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'; window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); status.textContent = message; status.dataset.kind = 'error'; submit.disabled = false; } };
+      loginForm.onsubmit = async event => {
+        event.preventDefault();
+        const identifier = document.getElementById('username').value.trim(), password = document.getElementById('password').value;
+        const status = loginForm.querySelector('[data-login-status]');
+        const submit = loginForm.querySelector('[data-login-submit]');
+        if (!identifier || !password) { const message = 'กรุณากรอกอีเมล/ชื่อผู้ใช้และรหัสผ่านให้ครบ'; window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); return; }
+        submit.disabled = true;
+        try {
+          const session = isEmailIdentifier(identifier) ? await M.auth.signIn(identifier, password) : await M.auth.signInWithUsername(identifier, password, 'admin');
+          const userId = session?.user?.id || M.auth.getSession()?.user?.id;
+          const roles = userId ? await M.auth.rolesFor(userId) : [];
+          if (!roles.includes('admin')) { M.auth.signOut('index.html?access_denied=1'); return; }
+          await window.APLoginUI?.showSuccess(loginForm, 'ยืนยันสิทธิ์ Admin สำเร็จ');
+          location.assign('dashboard.html');
+        } catch (error) {
+          const raw = String(error?.message || '');
+          const message = /missing username|missing identifier|missing password|invalid login|invalid credentials|ชื่อผู้ใช้หรือรหัสผ่าน|ไม่พบบัญชี|ไม่มีสิทธิ์/i.test(raw) ? 'อีเมล/ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' : 'เข้าสู่ระบบ Admin ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+          window.APLoginUI?.showError(loginForm, message); M.ui.setNotice(message, 'error'); status.textContent = message; status.dataset.kind = 'error'; submit.disabled = false;
+        }
+      };
     };
     if (recoverySession || recoveryState === '1' || recoveryState === 'update') { render('update'); return; }
     if (recoveryState === 'request') { render('request'); return; }
