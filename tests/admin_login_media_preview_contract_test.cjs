@@ -12,7 +12,8 @@ assert.match(sharedMediaUi, /data-image-source-choices/, 'Shared MPA UI must pro
 assert.match(sharedMediaUi, /เลือกจากคลังภาพ/, 'Shared MPA UI must provide a library chooser');
 assert.match(sharedMediaUi, /ถ่ายรูปด้วยกล้อง/, 'Shared MPA UI must provide a camera chooser');
 assert.match(runtime, /const loginMediaFileField = \$\('login-media-file'\)/, 'Preview runtime must bind the existing file input');
-assert.match(runtime, /loginMediaSourceChoices\.querySelectorAll\('button'\)/, 'Preview runtime must bind existing source buttons');
+assert.match(runtime, /loginMediaSourceField\?\.addEventListener\('click'/, 'Preview runtime must delegate clicks from the source field');
+assert.match(runtime, /loginMediaSourceField\.querySelectorAll\('\[data-image-source-choices\] button'\)/, 'Preview runtime must discover dynamic source buttons');
 assert.match(runtime, /loginMediaFileField\.click\(\)/, 'Source buttons must open the existing file chooser');
 assert.match(runtime, /URL\.createObjectURL\(file\)/, 'Selecting a file must create a local preview blob');
 assert.match(runtime, /loginMediaPreview\.hidden = false/, 'Selecting a file must reveal the preview before submit');
