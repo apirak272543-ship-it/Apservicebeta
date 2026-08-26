@@ -107,6 +107,7 @@ Deno.serve(async (request) => {
     const { data: callerResult, error: callerError } = await admin.auth.getUser(accessToken)
     const caller = callerResult.user
     if (callerError || !caller) return json({ error: 'ไม่สามารถยืนยันผู้ดูแลระบบได้' }, 401)
+    const callerDb = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false }, global: { headers: { Authorization: `Bearer ${accessToken}` } } })
 
     if (body.action === 'report_rider_delivery_issue') {
       const orderId = text(body.order_id)
@@ -175,23 +176,77 @@ Deno.serve(async (request) => {
       return json({ ok: true, operation, rider: updated })
     }
 
+    if (body.action === 'update_rider_delivery') {
+      const orderId = text(body.order_id)
+      const operation = text(body.operation)
+      const input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
+      if (!orderId || !['status', 'proof'].includes(operation)) return json({ error: 'กรุณาระบุงานและคำสั่ง Rider ที่ถูกต้อง' }, 400)
+
+      const { data: riderRole, error: riderRoleError } = await admin.from('user_roles').select('role').eq('user_id', caller.id).eq('role', 'rider').maybeSingle()
+      if (riderRoleError) return json({ error: riderRoleError.message }, 400)
+      if (!riderRole) return json({ error: 'เฉพาะบัญชี Rider ที่ยืนยันสิทธิ์แล้วเท่านั้นที่อัปเดตงานจัดส่งได้' }, 403)
+      const { data: rider, error: riderError } = await admin.from('riders').select('id,user_id,compliance_status').eq('user_id', caller.id).maybeSingle()
+      if (riderError) return json({ error: riderError.message }, 400)
+      if (!rider) return json({ error: 'ไม่พบโปรไฟล์ Rider ที่ผูกกับบัญชีนี้' }, 404)
+      if (String(rider.compliance_status || '').toLowerCase() !== 'approved') return json({ error: 'บัญชี Rider ยังไม่ผ่านการอนุมัติ จึงอัปเดตงานจัดส่งไม่ได้' }, 409)
+
+      const { data: order, error: orderError } = await admin.from('delivery_orders').select('id,rider_id,rider_name,status,proof_image,dispatch_status,workflow_state,delivery_started_at,completed_at,updated_at').eq('id', orderId).maybeSingle()
+      if (orderError) return json({ error: orderError.message }, 400)
+      if (!order || order.rider_id !== rider.id) return json({ error: 'ไม่พบงานที่เป็นของ Rider บัญชีนี้' }, 404)
+      if (TERMINAL_ORDER_STATUSES.has(String(order.status || ''))) return json({ error: 'งานนี้ปิดแล้ว ไม่สามารถอัปเดตจาก Rider ได้' }, 409)
+
+      const now = new Date().toISOString()
+      const updates: Record<string, unknown> = { updated_at: now }
+      if (operation === 'status') {
+        const nextStatus = text(input.status)
+        const riderStatuses = new Set([ORDER_STATUS.RIDER_PICKUP, ORDER_STATUS.ARRIVED_STORE, ORDER_STATUS.COLLECTED, ORDER_STATUS.DELIVERING, ORDER_STATUS.COMPLETED])
+        if (!riderStatuses.has(nextStatus) || !(ORDER_TRANSITIONS[String(order.status || '')] || []).includes(nextStatus)) return json({ error: `ไม่อนุญาตให้ Rider เปลี่ยนจาก “${text(order.status)}” เป็น “${nextStatus}”` }, 409)
+        updates.status = nextStatus
+        if (nextStatus === ORDER_STATUS.DELIVERING && !order.delivery_started_at) updates.delivery_started_at = now
+        if (nextStatus === ORDER_STATUS.COMPLETED && !order.completed_at) updates.completed_at = now
+      } else {
+        const proofRef = text(input.proof_image)
+        const allowedPrefix = `delivery-proofs/${caller.id}/${orderId}/`
+        if (!proofRef || proofRef.length > 1024 || !proofRef.startsWith(allowedPrefix) || !/^delivery-proofs\/[^/]+\/[^/]+\/[^/]+\.(?:jpg|jpeg)$/i.test(proofRef)) return json({ error: 'หลักฐานต้องเป็นไฟล์ private ที่ Rider อัปโหลดสำหรับงานนี้เท่านั้น' }, 400)
+        updates.proof_image = proofRef
+      }
+
+      const { data: updated, error: updateError } = await callerDb.from('delivery_orders').update(updates).eq('id', orderId).eq('rider_id', rider.id).select('id,rider_id,rider_name,status,workflow_state,dispatch_status,proof_image,delivery_started_at,completed_at,updated_at').maybeSingle()
+      if (updateError) return json({ error: updateError.message }, 400)
+      if (!updated) return json({ error: 'งานจัดส่งเปลี่ยนสถานะไปแล้ว กรุณารีเฟรชแล้วลองใหม่' }, 409)
+      return json({ ok: true, operation, order: updated })
+    }
+
     const { data: adminRole } = await admin.from('user_roles').select('role').eq('user_id', caller.id).eq('role', 'admin').maybeSingle()
     if (!adminRole) return json({ error: 'เฉพาะผู้ดูแลระบบที่มีสิทธิ์ใน Supabase เท่านั้นที่ดำเนินการได้' }, 403)
-    const callerDb = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false }, global: { headers: { Authorization: `Bearer ${accessToken}` } } })
-
     if (body.action === 'review_rider_compliance') {
       const riderId = text(body.rider_id), decision = text(body.decision), note = text(body.note)
+      const metadata = body.metadata && typeof body.metadata === 'object' ? body.metadata as Record<string, unknown> : null
+      const identityVerified = metadata?.identity_verified === true
+      const licenseNumber = text(metadata?.license_number)
+      const licenseExpiry = text(metadata?.license_expiry)
+      const insuranceExpiry = text(metadata?.insurance_expiry)
+      const dateAtUtc = (value: string) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return Number.NaN
+        const date = new Date(`${value}T00:00:00.000Z`)
+        return date.toISOString().slice(0, 10) === value ? date.getTime() : Number.NaN
+      }
       if (!riderId || !['approved', 'rejected'].includes(decision) || note.length < 3) return json({ error: 'กรุณาระบุ Rider ผลพิจารณา และเหตุผลอย่างน้อย 3 ตัวอักษร' }, 400)
       const { data: rider, error: riderError } = await admin.from('riders').select('id,user_id,identity_verified,identity_document_image_url,license_number,license_expiry,license_image_url,vehicle_registration_image_url,insurance_expiry,insurance_image_url,compliance_status,ride_available,status').eq('id', riderId).maybeSingle()
       if (riderError) return json({ error: riderError.message }, 400)
       if (!rider) return json({ error: 'ไม่พบ Rider ที่ต้องการพิจารณา' }, 404)
+      const todayAtUtc = dateAtUtc(new Date().toISOString().slice(0, 10))
       if (decision === 'approved') {
-        const licenseValid = rider.license_expiry && new Date(rider.license_expiry).getTime() >= new Date(new Date().toISOString().slice(0, 10)).getTime()
-        const insuranceValid = rider.insurance_expiry && new Date(rider.insurance_expiry).getTime() >= new Date(new Date().toISOString().slice(0, 10)).getTime()
-        if (!rider.identity_verified || !rider.identity_document_image_url || !rider.license_number || !licenseValid || !rider.license_image_url || !rider.vehicle_registration_image_url || !insuranceValid || !rider.insurance_image_url) return json({ error: 'เอกสารยืนยันตัวตน ใบขับขี่ ทะเบียนรถ หรือประกันยังไม่ครบ/หมดอายุ จึงอนุมัติไม่ได้' }, 409)
+        const licenseValid = Number.isFinite(dateAtUtc(licenseExpiry)) && dateAtUtc(licenseExpiry) >= todayAtUtc
+        const insuranceValid = Number.isFinite(dateAtUtc(insuranceExpiry)) && dateAtUtc(insuranceExpiry) >= todayAtUtc
+        if (!metadata || !identityVerified || !licenseNumber || licenseNumber.length > 120 || !licenseValid || !rider.identity_document_image_url || !rider.license_image_url || !rider.vehicle_registration_image_url || !insuranceValid || !rider.insurance_image_url) return json({ error: 'เอกสารยืนยันตัวตน ใบขับขี่ ทะเบียนรถ หรือประกันยังไม่ครบ/หมดอายุ จึงอนุมัติไม่ได้' }, 409)
       }
       const updates: Record<string, unknown> = { compliance_status: decision, compliance_note: note, compliance_reviewed_by: caller.id, compliance_reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-      if (decision !== 'approved') { updates.ride_available = false; updates.status = 'ไม่พร้อมรับงาน' }
+      if (decision === 'approved') {
+        Object.assign(updates, { identity_verified: true, license_number: licenseNumber, license_expiry: licenseExpiry, insurance_expiry: insuranceExpiry })
+      } else {
+        updates.ride_available = false; updates.status = 'ไม่พร้อมรับงาน'
+      }
       const { data: updated, error: updateError } = await admin.from('riders').update(updates).eq('id', riderId).select('id,compliance_status,compliance_note,compliance_reviewed_at,ride_available,status').single()
       if (updateError) return json({ error: updateError.message }, 400)
       await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: rider.user_id || null, action: 'rider_compliance_reviewed', reason: note, before_state: { rider_id: riderId, compliance_status: rider.compliance_status, ride_available: rider.ride_available }, after_state: { rider_id: riderId, compliance_status: updated.compliance_status, ride_available: updated.ride_available } })
