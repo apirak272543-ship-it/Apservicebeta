@@ -421,6 +421,8 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === 'list_user_control_plane') {
+      const { data: canManageAdmin, error: governanceError } = await callerDb.rpc('admin_can_manage_admin_roles')
+      if (governanceError) return json({ error: governanceError.message }, 400)
       const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }, { data: controls, error: controlsError }, { data: wallets, error: walletsError }] = await Promise.all([
         admin.from('user_profiles').select('user_id,email,display_name,phone,address,login_id,created_at,updated_at').order('created_at', { ascending: false }).limit(1000),
         admin.from('user_roles').select('user_id,role').limit(4000),
@@ -431,7 +433,7 @@ Deno.serve(async (request) => {
       const rolesByUser = new Map<string, string[]>(); (roles || []).forEach(row => rolesByUser.set(row.user_id, [...(rolesByUser.get(row.user_id) || []), row.role]))
       const controlsByUser = new Map((controls || []).map(row => [row.user_id, row]))
       const walletByUser = new Map<string, number>(); (wallets || []).forEach(row => walletByUser.set(row.customer_id, Number(walletByUser.get(row.customer_id) || 0) + Number(row.amount || 0)))
-      return json({ ok: true, users: (profiles || []).map(profile => ({ ...profile, roles: rolesByUser.get(profile.user_id) || [], control: controlsByUser.get(profile.user_id) || { status: 'active', suspension_reason: '', feature_overrides: {} }, wallet_balance: walletByUser.get(profile.user_id) || 0 })) })
+      return json({ ok: true, can_manage_admin: canManageAdmin === true, users: (profiles || []).map(profile => ({ ...profile, roles: rolesByUser.get(profile.user_id) || [], control: controlsByUser.get(profile.user_id) || { status: 'active', suspension_reason: '', feature_overrides: {} }, wallet_balance: walletByUser.get(profile.user_id) || 0 })) })
     }
 
     if (body.action === 'update_user_profile_section') {
@@ -478,6 +480,11 @@ Deno.serve(async (request) => {
 
     if (body.action === 'create_managed_account') {
       const role = body.role, email = normalizedId(body.email), loginId = normalizedId(body.login_id), displayName = text(body.display_name), password = String(body.password || ''), phone = text(body.phone)
+      if (role === 'admin') {
+        const { data: canManageAdmin, error: governanceError } = await callerDb.rpc('admin_can_manage_admin_roles')
+        if (governanceError) return json({ error: governanceError.message }, 400)
+        if (canManageAdmin !== true) return json({ error: 'เฉพาะ Master/Owner ที่มีอำนาจเท่านั้นจึงสร้างบัญชีผู้ดูแลได้' }, 403)
+      }
       if (!isManagedRole(role) || !looksLikeEmail(email) || !loginIdIsValid(loginId) || !displayName || password.length < 8) return json({ error: 'กรุณาระบุบทบาท อีเมล Login ID ชื่อ และรหัสผ่านอย่างน้อย 8 ตัวอักษรให้ครบถ้วน' }, 400)
       const { data: duplicate } = await admin.from('user_profiles').select('user_id').or(`email.eq.${email},login_id.eq.${loginId}`).maybeSingle(); if (duplicate) return json({ error: 'อีเมลหรือ Login ID นี้ถูกใช้งานแล้ว' }, 409)
       const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { login_id: loginId, app_role: role, display_name: displayName } })
