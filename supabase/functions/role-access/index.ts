@@ -476,19 +476,63 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === 'list_user_control_plane') {
-      const { data: canManageAdmin, error: governanceError } = await callerDb.rpc('admin_can_manage_admin_roles')
-      if (governanceError) return json({ error: governanceError.message }, 400)
-      const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }, { data: controls, error: controlsError }, { data: wallets, error: walletsError }] = await Promise.all([
+      const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }, { data: controls, error: controlsError }, { data: wallets, error: walletsError }, { data: riders, error: ridersError }, { data: stores, error: storesError }] = await Promise.all([
         admin.from('user_profiles').select('user_id,email,display_name,phone,address,login_id,created_at,updated_at').order('created_at', { ascending: false }).limit(1000),
         admin.from('user_roles').select('user_id,role').limit(4000),
         admin.from('account_controls').select('user_id,status,suspension_reason,feature_overrides,updated_at').limit(1000),
         admin.from('wallet_transactions').select('customer_id,amount,created_at').order('created_at', { ascending: false }).limit(5000),
+        admin.from('riders').select('id,user_id,name,phone,vehicle,status,compliance_status,ride_available,updated_at').order('updated_at', { ascending: false }).limit(1000),
+        admin.from('stores').select('id,owner_id,name,active,moderation_status,updated_at').order('updated_at', { ascending: false }).limit(1000),
       ])
-      if (profilesError || rolesError || controlsError || walletsError) return json({ error: profilesError?.message || rolesError?.message || controlsError?.message || walletsError?.message || 'ไม่สามารถอ่านข้อมูลบัญชีได้' }, 400)
+      if (profilesError || rolesError || controlsError || walletsError || ridersError || storesError) return json({ error: profilesError?.message || rolesError?.message || controlsError?.message || walletsError?.message || ridersError?.message || storesError?.message || 'ไม่สามารถอ่านข้อมูลบัญชีได้' }, 400)
       const rolesByUser = new Map<string, string[]>(); (roles || []).forEach(row => rolesByUser.set(row.user_id, [...(rolesByUser.get(row.user_id) || []), row.role]))
       const controlsByUser = new Map((controls || []).map(row => [row.user_id, row]))
       const walletByUser = new Map<string, number>(); (wallets || []).forEach(row => walletByUser.set(row.customer_id, Number(walletByUser.get(row.customer_id) || 0) + Number(row.amount || 0)))
-      return json({ ok: true, can_manage_admin: canManageAdmin === true, users: (profiles || []).map(profile => ({ ...profile, roles: rolesByUser.get(profile.user_id) || [], control: controlsByUser.get(profile.user_id) || { status: 'active', suspension_reason: '', feature_overrides: {} }, wallet_balance: walletByUser.get(profile.user_id) || 0 })) })
+      const riderByUser = new Map<string, Record<string, unknown>>(); (riders || []).forEach(row => { if (row.user_id) riderByUser.set(row.user_id, row) })
+      const storesByUser = new Map<string, Record<string, unknown>[]>(); (stores || []).forEach(row => { if (row.owner_id) storesByUser.set(row.owner_id, [...(storesByUser.get(row.owner_id) || []), row]) })
+      const users = (profiles || []).map(profile => {
+        const userRoles = rolesByUser.get(profile.user_id) || []
+        const rider = riderByUser.get(profile.user_id) || null
+        const ownedStores = storesByUser.get(profile.user_id) || []
+        return {
+          ...profile,
+          roles: userRoles,
+          control: controlsByUser.get(profile.user_id) || { status: 'active', suspension_reason: '', feature_overrides: {} },
+          wallet_balance: walletByUser.get(profile.user_id) || 0,
+          rider,
+          stores: ownedStores,
+          linkage: {
+            rider: userRoles.includes('rider') ? (rider ? 'linked' : 'missing') : (rider ? 'linked_without_role' : 'none'),
+            store: userRoles.includes('store_owner') ? (ownedStores.length ? 'linked' : 'missing') : (ownedStores.length ? 'linked_without_role' : 'none'),
+          },
+        }
+      })
+      const { data: canManageAdmin, error: capabilityError } = await callerDb.rpc('admin_can_manage_admin_roles')
+      if (capabilityError) return json({ error: `ตรวจสอบสิทธิ์สร้าง Admin ไม่สำเร็จ: ${capabilityError.message}` }, 500)
+      return json({ ok: true, can_manage_admin: canManageAdmin === true, users, unlinked_riders: (riders || []).filter(row => !row.user_id), unlinked_stores: (stores || []).filter(row => !row.owner_id) })
+    }
+
+    if (body.action === 'link_rider_profile') {
+      const riderId = text(body.rider_id), userId = text(body.user_id), reason = text(body.reason)
+      if (!riderId || !userId || reason.length < 10) return json({ error: 'กรุณาระบุ Rider บัญชีปลายทาง และเหตุผลอย่างน้อย 10 ตัวอักษร' }, 400)
+      const [{ data: rider, error: riderError }, { data: profile, error: profileError }, { data: roleRow, error: roleError }, { data: existingLink, error: existingLinkError }] = await Promise.all([
+        admin.from('riders').select('id,user_id,name,phone,vehicle,status,updated_at').eq('id', riderId).maybeSingle(),
+        admin.from('user_profiles').select('user_id').eq('user_id', userId).maybeSingle(),
+        admin.from('user_roles').select('role').eq('user_id', userId).eq('role', 'rider').maybeSingle(),
+        admin.from('riders').select('id').eq('user_id', userId).maybeSingle(),
+      ])
+      if (riderError || profileError || roleError || existingLinkError) return json({ error: riderError?.message || profileError?.message || roleError?.message || existingLinkError?.message || 'ไม่สามารถตรวจสอบการเชื่อม Rider ได้' }, 400)
+      if (!rider) return json({ error: 'ไม่พบข้อมูล Rider ที่ต้องการเชื่อม' }, 404)
+      if (rider.user_id) return json({ error: 'Rider นี้ผูกกับบัญชีอยู่แล้ว' }, 409)
+      if (!profile) return json({ error: 'ไม่พบโปรไฟล์บัญชีปลายทาง' }, 404)
+      if (!roleRow) return json({ error: 'บัญชีปลายทางยังไม่มี role Rider' }, 409)
+      if (existingLink) return json({ error: 'บัญชีปลายทางผูกกับ Rider อื่นอยู่แล้ว' }, 409)
+      const now = new Date().toISOString()
+      const { data: linked, error: updateError } = await admin.from('riders').update({ user_id: userId, updated_at: now }).eq('id', riderId).is('user_id', null).select('id,user_id,name,phone,vehicle,status,updated_at').single()
+      if (updateError) return json({ error: updateError.message }, 400)
+      const { error: auditError } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'rider_profile_linked', reason, before_state: { rider_id: riderId, user_id: null }, after_state: { rider_id: riderId, user_id: userId } })
+      if (auditError) { const { error: rollbackError } = await admin.from('riders').update({ user_id: null, updated_at: new Date().toISOString() }).eq('id', riderId).eq('user_id', userId); if (rollbackError) console.error('rider_profile_link_rollback_failed', { rider_id: riderId, user_id: userId, error: rollbackError.message }); return json({ error: `บันทึก audit ไม่สำเร็จ: ${auditError.message}` }, 500) }
+      return json({ ok: true, rider: linked })
     }
 
     if (body.action === 'update_user_profile_section') {
@@ -535,20 +579,69 @@ Deno.serve(async (request) => {
 
     if (body.action === 'create_managed_account') {
       const role = body.role, email = normalizedId(body.email), loginId = normalizedId(body.login_id), displayName = text(body.display_name), password = String(body.password || ''), phone = text(body.phone)
-      if (role === 'admin') {
-        const { data: canManageAdmin, error: governanceError } = await callerDb.rpc('admin_can_manage_admin_roles')
-        if (governanceError) return json({ error: governanceError.message }, 400)
-        if (canManageAdmin !== true) return json({ error: 'เฉพาะ Master/Owner ที่มีอำนาจเท่านั้นจึงสร้างบัญชีผู้ดูแลได้' }, 403)
-      }
-      if (!isManagedRole(role) || !looksLikeEmail(email) || !loginIdIsValid(loginId) || !displayName || password.length < 8) return json({ error: 'กรุณาระบุบทบาท อีเมล Login ID ชื่อ และรหัสผ่านอย่างน้อย 8 ตัวอักษรให้ครบถ้วน' }, 400)
+      if (!['customer', 'admin'].includes(String(role)) || !looksLikeEmail(email) || !loginIdIsValid(loginId) || !displayName || password.length < 8) return json({ error: 'บัญชี Rider/เจ้าของร้านต้องสร้างผ่าน workflow provision ที่สร้าง domain profile พร้อมกัน' }, 400)
+      if (role === 'admin') { const { data: canManageAdmin, error: capabilityError } = await callerDb.rpc('admin_can_manage_admin_roles'); if (capabilityError) return json({ error: `ตรวจสอบสิทธิ์สร้าง Admin ไม่สำเร็จ: ${capabilityError.message}` }, 500); if (canManageAdmin !== true) return json({ error: 'เฉพาะ Master/Owner เท่านั้นที่สร้างบัญชีผู้ดูแลได้' }, 403) }
       const { data: duplicate } = await admin.from('user_profiles').select('user_id').or(`email.eq.${email},login_id.eq.${loginId}`).maybeSingle(); if (duplicate) return json({ error: 'อีเมลหรือ Login ID นี้ถูกใช้งานแล้ว' }, 409)
       const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { login_id: loginId, app_role: role, display_name: displayName } })
       if (createError || !created.user) return json({ error: createError?.message || 'ไม่สามารถสร้างบัญชีได้' }, 400)
       const userId = created.user.id
-      const { error: profileError } = await admin.from('user_profiles').upsert({ user_id: userId, email, display_name: displayName, login_id: loginId, phone }); if (profileError) return json({ error: profileError.message }, 400)
-      const { error: roleError } = await admin.from('user_roles').insert({ user_id: userId, role }); if (roleError) return json({ error: roleError.message }, 400)
-      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'managed_account_created', after_state: { role, email, login_id: loginId } })
-      return json({ ok: true, user_id: userId, role, email, login_id: loginId })
+      try {
+        const { error: profileError } = await admin.from('user_profiles').upsert({ user_id: userId, email, display_name: displayName, login_id: loginId, phone }); if (profileError) throw profileError
+        const { error: roleError } = await admin.from('user_roles').insert({ user_id: userId, role }); if (roleError) throw roleError
+        const { error: auditError } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'managed_account_created', after_state: { role, login_id: loginId } }); if (auditError) throw auditError
+        return json({ ok: true, user_id: userId, role, email, login_id: loginId })
+      } catch (error) {
+        await admin.auth.admin.deleteUser(userId).catch(() => null)
+        return json({ error: error instanceof Error ? error.message : 'ไม่สามารถสร้างบัญชีได้' }, 400)
+      }
+    }
+
+    if (body.action === 'provision_rider_account') {
+      const entity = body.entity && typeof body.entity === 'object' ? body.entity as RiderEntity : {}
+      const entityId = text(body.entity_id || entity.id) || `rider-${crypto.randomUUID()}`, email = normalizedId(body.email), loginId = normalizedId(body.login_id), displayName = text(body.display_name || entity.name), password = String(body.password || ''), phone = text(body.phone || entity.phone)
+      if (!displayName || !looksLikeEmail(email) || !loginIdIsValid(loginId) || !secureTemporaryPassword(password)) return json({ error: 'กรุณาระบุชื่อ Rider, อีเมล, Login ID และรหัสผ่าน 12 ตัวอักษรตามนโยบายให้ครบถ้วน' }, 400)
+      const { data: duplicate, error: duplicateError } = await admin.from('user_profiles').select('user_id').or(`email.eq.${email},login_id.eq.${loginId}`).maybeSingle()
+      if (duplicateError) return json({ error: duplicateError.message }, 400)
+      if (duplicate) return json({ error: 'อีเมลหรือ Login ID นี้ถูกใช้งานแล้ว' }, 409)
+      const { data: existingRider, error: existingRiderError } = await admin.from('riders').select('id,user_id').eq('id', entityId).maybeSingle()
+      if (existingRiderError) return json({ error: existingRiderError.message }, 400)
+      if (existingRider) return json({ error: 'รหัส Rider นี้ถูกใช้งานแล้ว' }, 409)
+      const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { login_id: loginId, app_role: 'rider', display_name: displayName } })
+      if (createError || !created.user) return json({ error: createError?.message || 'ไม่สามารถสร้างบัญชี Rider ได้' }, 400)
+      const userId = created.user.id
+      try {
+        const { error: profileError } = await admin.from('user_profiles').insert({ user_id: userId, email, display_name: displayName, login_id: loginId, phone }); if (profileError) throw profileError
+        const { error: roleError } = await admin.from('user_roles').insert({ user_id: userId, role: 'rider' }); if (roleError) throw roleError
+        const { error: riderError } = await admin.from('riders').insert({ id: entityId, user_id: userId, name: displayName, phone, vehicle: text(entity.vehicle, 'มอเตอร์ไซค์'), status: text(entity.status, 'ไม่พร้อมรับงาน') }); if (riderError) throw riderError
+        const { error: auditError } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'rider_account_provisioned', after_state: { rider_id: entityId, role: 'rider' } }); if (auditError) throw auditError
+        return json({ ok: true, user_id: userId, role: 'rider', entity_id: entityId, email, login_id: loginId })
+      } catch (error) {
+        const { error: riderRollbackError } = await admin.from('riders').delete().eq('id', entityId).eq('user_id', userId)
+        if (riderRollbackError) console.error('rider_account_provision_rollback_failed', { rider_id: entityId, user_id: userId, step: 'rider_delete', error: riderRollbackError.message })
+        const { error: authRollbackError } = await admin.auth.admin.deleteUser(userId)
+        if (authRollbackError) console.error('rider_account_provision_rollback_failed', { rider_id: entityId, user_id: userId, step: 'auth_delete', error: authRollbackError.message })
+        return json({ error: error instanceof Error ? error.message : 'ไม่สามารถสร้างบัญชี Rider และโปรไฟล์ได้' }, 400)
+      }
+    }
+
+    if (body.action === 'provision_rider_profile') {
+      const userId = text(body.user_id), name = text(body.name), phone = text(body.phone), vehicle = text(body.vehicle, 'มอเตอร์ไซค์'), reason = text(body.reason)
+      if (!userId || !name || reason.length < 10) return json({ error: 'กรุณาระบุบัญชี Rider ชื่อโปรไฟล์ และเหตุผลอย่างน้อย 10 ตัวอักษร' }, 400)
+      const [{ data: profile, error: profileError }, { data: roleRow, error: roleError }, { data: existingLink, error: existingLinkError }] = await Promise.all([
+        admin.from('user_profiles').select('user_id').eq('user_id', userId).maybeSingle(),
+        admin.from('user_roles').select('role').eq('user_id', userId).eq('role', 'rider').maybeSingle(),
+        admin.from('riders').select('id').eq('user_id', userId).maybeSingle(),
+      ])
+      if (profileError || roleError || existingLinkError) return json({ error: profileError?.message || roleError?.message || existingLinkError?.message || 'ไม่สามารถตรวจสอบบัญชี Rider ได้' }, 400)
+      if (!profile) return json({ error: 'ไม่พบโปรไฟล์บัญชีปลายทาง' }, 404)
+      if (!roleRow) return json({ error: 'บัญชีปลายทางยังไม่มี role Rider' }, 409)
+      if (existingLink) return json({ error: 'บัญชีนี้มีโปรไฟล์ Rider อยู่แล้ว' }, 409)
+      const riderId = `rider-${crypto.randomUUID()}`
+      const { data: created, error: riderError } = await admin.from('riders').insert({ id: riderId, user_id: userId, name, phone, vehicle, status: 'ไม่พร้อมรับงาน' }).select('id,user_id,name,phone,vehicle,status,updated_at').single()
+      if (riderError) return json({ error: riderError.message }, 400)
+      const { error: auditError } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'rider_profile_provisioned', reason, before_state: { rider_id: null, user_id: userId }, after_state: { rider_id: riderId, user_id: userId } })
+      if (auditError) { const { error: rollbackError } = await admin.from('riders').delete().eq('id', riderId).eq('user_id', userId); if (rollbackError) console.error('rider_profile_provision_rollback_failed', { rider_id: riderId, user_id: userId, error: rollbackError.message }); return json({ error: `บันทึก audit ไม่สำเร็จ: ${auditError.message}` }, 500) }
+      return json({ ok: true, rider: created })
     }
 
     if (body.action === 'provision_store_owner') {

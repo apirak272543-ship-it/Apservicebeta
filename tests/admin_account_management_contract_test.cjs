@@ -26,15 +26,15 @@ assert.match(admin, /data-account-action="controls"/, 'รายละเอี�
 assert.match(admin, /href="stores\.html"/, 'บัญชีร้านค้าต้องเชื่อมไปยัง Store Control Plane');
 assert.match(admin, /href="riders\.html"/, 'บัญชี Rider ต้องเชื่อมไปยัง Rider Control Plane');
 assert.match(accounts, /data-page="accounts"/, 'Accounts route ต้องคงเป็น MPA route เดิม');
-assert.match(accounts, /admin-accounts\.css\?v=accounts-v2/, 'Accounts route ต้อง cache-bust style รายละเอียดบัญชีใหม่');
-assert.match(accounts, /admin-app\.js\?v=admin-source-v12/, 'Accounts route ต้อง cache-bust runtime source ล่าสุด');
+assert.match(accounts, /admin-accounts\.css\?v=accounts-v3/, 'Accounts route ต้อง cache-bust style รายละเอียดบัญชีใหม่');
+assert.match(accounts, /admin-app\.js\?v=admin-source-v13/, 'Accounts route ต้อง cache-bust runtime source ล่าสุด');
 assert.doesNotMatch(accounts, /admin-override-governance\.js|admin-control-plane-patch\.js/, 'Accounts route ต้องไม่โหลด governance/control-plane overlay ที่ย้ายเข้า source หลักแล้ว');
 assert.doesNotMatch(accounts, /admin-user-compact-ui\.(css|js)/, 'Accounts route ต้องไม่โหลด compact overlay ที่ถูกถอดออก');
 assert.match(profile, /data-page="profile"/, 'ปุ่ม Profile ต้องเปิด current-admin profile ที่ตรงข้อความของ navigation');
 assert.match(profile, /admin-profile\.css\?v=admin-profile-v1/, 'Profile route ต้องโหลด style สำหรับข้อมูลบัญชีปัจจุบัน');
 assert.match(admin, /async function profile\(\)/, 'Profile route ต้องมี renderer อยู่ใน admin-app.js source หลัก');
 assert.doesNotMatch(profile, /admin-control-plane-patch\.js|admin-override-governance\.js/, 'Profile route ต้องไม่โหลด control-plane/override overlay หลังย้าย source');
-assert.match(profile, /admin-app\.js\?v=admin-source-v12/, 'Profile route ต้อง cache-bust runtime source ล่าสุด');
+assert.match(profile, /admin-app\.js\?v=admin-source-v13/, 'Profile route ต้อง cache-bust runtime source ล่าสุด');
 assert.match(admin, /data-user-manage/, 'รายการบัญชีต้องมีปุ่มจัดการจาก source หลัก');
 assert.match(admin, /openAccountActionMenu/, 'action menu ต้องอยู่ใน source หลัก ไม่ใช่ไฟล์ overlay');
 assert.match(admin, /data-account-menu-action/, 'action menu ต้องมี handler สำหรับการจัดการบัญชี');

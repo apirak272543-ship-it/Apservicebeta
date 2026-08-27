@@ -17,7 +17,7 @@ assert.match(app, /ไม่พร้อมใช้งาน/);
 assert.match(app, /ทางลัดเพิ่มเติม/);
 assert.match(app, /admin-dashboard-counts/);
 assert.match(app, /sessionStorage/);
-assert.match(page, /admin-app\.js\?v=admin-source-v12/);
+assert.match(page, /admin-app\.js\?v=admin-source-v13/);
 assert.match(page, /admin-management\.css\?v=admin-management-v2/);
 assert.match(css, /\.admin-finance-grid/);
 assert.match(css, /@media\(max-width:760px\)/);
