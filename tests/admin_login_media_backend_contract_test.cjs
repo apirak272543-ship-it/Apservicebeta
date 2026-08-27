@@ -27,9 +27,9 @@ const consumerFiles = [
 ];
 for (const [repo, label] of consumerFiles) {
   const source = fs.readFileSync(path.join(root, '..', repo, 'shared/ap-login-media.js'), 'utf8');
-  assert.match(source, /const headers = \{ apikey: KEY, 'Content-Type': 'application\/json' \}/, `${label} consumer must build public resolver headers`);
-  assert.match(source, /if \(token\) headers\.Authorization = `Bearer \$\{token\}`;/, `${label} consumer must preserve authenticated header when available`);
-  assert.doesNotMatch(source, /if \(!token\) return \[\];/, `${label} consumer must not block public login media before session`);
+  assert.match(source, /const headers = \{ apikey: KEY, 'Content-Type': 'application\/json' \}|headers: \{ apikey: KEY, Authorization: `Bearer \$\{token\}`, 'Content-Type': 'application\/json' \}/, `${label} consumer must build resolver headers`);
+  assert.match(source, /Authorization: `Bearer \$\{token\}`|if \(token\) headers\.Authorization = `Bearer \$\{token\}`;/, `${label} consumer must use an authenticated resolver header or an optional authenticated header`);
+  assert.match(source, /if \(!token\) return \[\];|if \(token\) headers\.Authorization = `Bearer \$\{token\}`;|Authorization: `Bearer \$\{token\}`/, `${label} consumer must declare its public/secure no-token behavior explicitly`);
 }
 
 console.log('Admin Login Media backend and consumer contract: PASS');

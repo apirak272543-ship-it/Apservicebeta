@@ -26,7 +26,7 @@ assert.ok(owner.indexOf("setMediaPreview(previewBlobUrl, 'local')") < owner.inde
 assert.ok(owner.indexOf('clearPreviewBlob();\n        setMediaPreview(uploaded.publicUrl, \'remote\')') > owner.indexOf('const uploaded = await window.APServiceMedia.uploadPublicCatalogImage'), 'remote preview ต้องตั้งหลัง shared upload สำเร็จ');
 
 const patchTag = '<script src="admin-menu-management-patch.js?v=menu-management-v2"></script>';
-const adminTag = '<script src="admin-app.js?v=admin-source-v12';
+const adminTag = '<script src="admin-app.js?v=admin-source-v13';
 assert.ok(stores.indexOf(patchTag) >= 0, 'Stores route ต้องโหลด dedicated menu owner');
 assert.ok(stores.indexOf(patchTag) < stores.indexOf(adminTag), 'dedicated menu owner ต้องโหลดก่อน admin-app เพื่อ bind route อย่าง canonical');
 

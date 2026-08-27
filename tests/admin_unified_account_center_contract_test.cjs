@@ -1,0 +1,48 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const admin = fs.readFileSync(path.join(root, 'admin/admin-app.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'supabase/functions/role-access/index.ts'), 'utf8');
+const styles = fs.readFileSync(path.join(root, 'admin/admin-accounts.css'), 'utf8');
+
+assert.match(admin, /\['accounts','บัญชีและผู้ใช้','account'\]/, 'Admin navigation must expose one canonical Account Center');
+assert.match(admin, /legacyLinks\.filter\(\(\[key\]\) => key !== 'admins'\)/, 'Duplicate legacy account link must be hidden while its route remains compatible');
+assert.match(admin, /accounts\.html\?create=rider/, 'Rider creation from the operational page must return to Account Center');
+assert.doesNotMatch(admin, /M\.request\('riders',\{method:'POST'/, 'Rider creation must not bypass identity/profile provisioning with a direct entity-only POST');
+assert.match(admin, /action: 'list_user_control_plane'/, 'Account Center must load its directory from the privileged server action');
+assert.match(admin, /person\.rider\?\.name|person\.rider\.name/, 'Account cards/detail must render linked Rider information');
+assert.match(admin, /ยังไม่มีโปรไฟล์ Rider/, 'Role-only Rider accounts must show a visible missing-profile state');
+assert.match(admin, /unlinkedRiders/, 'Account Center must expose orphan Rider records instead of silently filtering them');
+assert.match(admin, /data-unlinked-rider/, 'Orphan Rider records must have an explicit link action');
+assert.match(admin, /action: 'link_rider_profile'/, 'Linking an existing Rider record must use a privileged server action');
+assert.match(admin, /action: 'provision_rider_profile'/, 'A Rider role-only account must have a central profile-provision action');
+assert.match(admin, /action: 'provision_rider_account'/, 'New Rider creation must use the combined account/domain provisioning action');
+assert.match(admin, /riders\.html\?focus=/, 'Linked Rider detail must deep-link to the Rider operational control plane');
+assert.match(admin, /ไม่พบข้อมูล Rider ที่ระบุ/, 'Missing Rider deep-links must show an explicit error notice');
+assert.match(source, /crypto\.randomUUID\(\)/, 'Server must generate Rider identifiers with UUID fallback rather than timestamp collision risk');
+assert.match(source, /rider_account_provision_rollback_failed/, 'Provision rollback failures must emit an operational alert without logging secrets');
+assert.match(source, /rider_profile_link_rollback_failed/, 'Link rollback failures must emit an operational alert without logging secrets');
+assert.match(admin, /stores\.html\?focus=/, 'Linked Store detail must deep-link to the Store control plane');
+assert.match(source, /admin\.from\('riders'\)\.select\('id,user_id,name,phone,vehicle,status,compliance_status,ride_available,updated_at'\)/, 'Unified server list must read the Rider domain with an explicit narrow projection');
+assert.match(source, /admin\.from\('stores'\)\.select\('id,owner_id,name,active,moderation_status,updated_at'\)/, 'Unified server list must read linked Store summaries with an explicit narrow projection');
+assert.match(source, /linkage:\s*\{[\s\S]*rider: userRoles\.includes\('rider'\)/, 'Server response must distinguish linked, missing and non-role Rider states');
+assert.match(source, /unlinked_riders:/, 'Server response must return orphan Rider records for Admin data health');
+assert.match(source, /callerDb\.rpc\('admin_can_manage_admin_roles'\)/, 'Admin capability must be evaluated with the caller JWT, not a service-role auth context');
+assert.match(source, /role === 'admin'.*callerDb\.rpc\('admin_can_manage_admin_roles'\)/s, 'Creating an Admin account must require the Master/Owner capability at the API boundary');
+assert.match(source, /body\.action === 'link_rider_profile'/, 'Server must expose the Rider link action');
+assert.match(source, /\.is\('user_id', null\)/, 'Rider link must be race-safe for orphan records only');
+assert.match(source, /if \(!roleRow\) return json\(\{ error: 'บัญชีปลายทางยังไม่มี role Rider'/, 'Rider link must require the target role');
+assert.match(source, /body\.action === 'provision_rider_account'/, 'Server must expose combined Rider account provisioning');
+assert.match(source, /secureTemporaryPassword\(password\)/, 'Combined Rider provisioning must preserve the secure password policy');
+assert.match(source, /admin\.auth\.admin\.deleteUser\(userId\)/, 'Failed provisioning must clean up the newly created Auth user');
+assert.match(source, /action: 'rider_account_provisioned'/, 'Rider provisioning must audit the entity linkage without logging a password');
+assert.match(source, /body\.action === 'provision_rider_profile'/, 'Server must expose role-only Rider profile provisioning');
+assert.match(source, /if \(existingLink\) return json\(\{ error: 'บัญชีนี้มีโปรไฟล์ Rider อยู่แล้ว'/, 'Role-only provisioning must reject duplicate Rider linkage');
+assert.match(source, /action: 'rider_profile_linked'/, 'Existing Rider linkage must audit before/after linkage state');
+assert.match(styles, /\.admin-linked-entity-panel/, 'Account detail must style linked domain panels in the existing account stylesheet');
+assert.match(styles, /\.admin-account-health/, 'Account Center must style explicit orphan/data-health sections');
+assert.match(styles, /@media\(max-width:760px\).*admin-account-health-row/s, 'Linkage health rows must remain usable on mobile');
+
+console.log('admin unified account center contract: PASS');
