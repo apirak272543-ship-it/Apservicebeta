@@ -17,7 +17,7 @@ assert.doesNotMatch(patch, /accounts:\s*accountsPatch/, 'หน้า accounts �
 assert.match(admin, /operationsV2\('admins'\)/, 'route accounts ต้องเปิด Account Control Plane รุ่นใหม่');
 assert.doesNotMatch(admin, /เข้าสู่ระบบด้วยบัญชีที่ได้รับสิทธิ์ Admin ใน Supabase/, 'หน้า Login ต้องไม่มีข้อความระบบ');
 assert.doesNotMatch(admin, /Admin Application นี้ทำงานแยกจาก Customer Application/, 'หน้า Login ต้องไม่มีข้อความระบบด้านล่าง');
-assert.match(admin, /aria-label="อีเมล"/, 'หน้า Login ต้องคง label สำหรับ accessibility');
+assert.match(admin, /aria-label="อีเมลหรือชื่อผู้ใช้ Admin"/, 'หน้า Login ต้องคง label สำหรับ accessibility');
 assert.match(storesPage, /admin-control-plane-completeness\.js/, 'หน้าร้านต้องโหลด action sheet ความครบถ้วน');
 assert.match(storesPage, /admin-store-location-picker\.js\?v=store-map-v3/, 'หน้าร้านต้องโหลดตัวเลือกตำแหน่งรุ่นล่าสุด');
 assert.match(storeLocationPicker, /form\[data-store-form\], form\[data-form\]/, 'ตัวเลือกตำแหน่งต้องรองรับฟอร์ม Store Control Plane ที่สร้างจริง');

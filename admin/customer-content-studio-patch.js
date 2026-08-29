@@ -82,6 +82,7 @@
   const mediaInput = (label, name, value, mediaType = 'ADMIN_MEDIA', alt = '') => `<div class="admin-content-media-field"><span class="admin-content-media-label">${esc(label)}</span><div class="admin-media-source-actions"><label class="mpa-button mpa-button-secondary">เลือกจากคลังภาพ<input hidden type="file" accept="image/jpeg,image/png,image/webp" data-media-input data-media-field="${esc(name)}" data-media-type="${esc(mediaType)}"></label><label class="mpa-button mpa-button-secondary">ถ่ายรูป<input hidden type="file" accept="image/jpeg,image/png,image/webp" capture="environment" data-media-input data-media-field="${esc(name)}" data-media-type="${esc(mediaType)}"></label></div><input hidden name="${esc(name)}" data-content-field="${esc(name)}" type="hidden" value="${esc(value)}"><input name="${esc(`${name}__alt`)}" data-content-field="${esc(`${name}__alt`)}" type="text" value="${esc(alt)}" placeholder="คำอธิบายรูปสำหรับการเข้าถึง"><div class="admin-content-media-preview" data-media-preview="${esc(name)}">${value ? `<img src="${esc(value)}" alt="${esc(alt || label)}">` : '<span class="mpa-muted">ยังไม่มีรูปภาพ</span>'}</div><small class="mpa-muted" data-media-status="${esc(name)}">รูปจะถูกบีบอัด ตรวจ URL และลงทะเบียนใน media_assets ก่อนบันทึก config</small></div>`;
 
   function readForm(form, home, promotions) {
+    if (!form?.elements) throw new Error('ไม่พบฟอร์ม Content Studio กรุณารีเฟรชหน้าแล้วลองใหม่');
     const value = name => String(form.elements[name]?.value || '').trim();
     const bool = name => value(name) === 'true';
     const next = typeof structuredClone === 'function' ? structuredClone(home) : JSON.parse(JSON.stringify(home));
@@ -218,7 +219,13 @@
         attachMediaInputs(host, access, load);
         host.querySelector('#customerContentForm').onsubmit = async event => {
           event.preventDefault();
-          const next = readForm(event.currentTarget, home, currentPromotions);
+          const form = event.currentTarget;
+          const submit = form?.querySelector('button[type="submit"]');
+          const originalSubmitLabel = submit?.textContent || 'บันทึกเนื้อหาและแบนเนอร์ทั้งหมด';
+          if (!form?.elements) return notice('บันทึก Content ไม่สำเร็จ: ไม่พบฟอร์ม กรุณารีเฟรชหน้าแล้วลองใหม่', 'error');
+          if (submit) { submit.disabled = true; submit.textContent = 'กำลังบันทึก…'; }
+          let next;
+          try { next = readForm(form, home, currentPromotions); } catch (error) { notice(`บันทึก Content ไม่สำเร็จ: ${error.message}`, 'error'); if (submit) { submit.disabled = false; submit.textContent = originalSubmitLabel; } return; }
           const nextBrand = { ...sourceBrand, customerHome: next.home };
           try {
             await request('platform_configs?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ key: 'brand_public', value: nextBrand, updated_at: iso() }) });
@@ -226,7 +233,8 @@
             await request('admin_action_audit', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ actor_id: access.user.id, action: 'customer_content_updated', reason: 'แก้ไข Customer Content Studio', before_state: { customerHome: home, promotions }, after_state: next, created_at: iso() }) }).catch(error => console.warn('บันทึก audit ไม่สำเร็จ', error));
             notice('บันทึก Customer Content และ Banner แล้ว');
             await load();
-          } catch (error) { notice(`บันทึก Content ไม่สำเร็จ: ${error.message}`, 'error'); }
+          } catch (error) { notice(`บันทึก Content ไม่สำเร็จ: ${error.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'}`, 'error'); }
+          finally { if (submit) { submit.disabled = false; submit.textContent = originalSubmitLabel; } }
         };
       };
       document.querySelector('#refreshCustomerContent').onclick = () => load().catch(error => notice(`รีเฟรชไม่สำเร็จ: ${error.message}`, 'error'));

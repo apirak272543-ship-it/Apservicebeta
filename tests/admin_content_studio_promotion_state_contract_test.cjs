@@ -27,7 +27,9 @@ assert.match(readForm, /const nextPromotions = promotions\.map/, 'readForm ต�
 assert.match(readForm, /placement:\s*row\?\.placement/, 'readForm ต้องไม่ตัด placement ทิ้ง');
 assert.match(readForm, /approval_status:\s*row\?\.approval_status/, 'readForm ต้องไม่ตัด approval_status ทิ้ง');
 
-assert.match(source, /const next = readForm\(event\.currentTarget, home, currentPromotions\);/, 'submit ต้อง serialize currentPromotions หลัง add/remove/reorder');
-assert.doesNotMatch(source, /const next = readForm\(event\.currentTarget, home, promotions\);/, 'ห้ามย้อนกลับไป serialize promotions array เดิม');
+assert.match(source, /let currentPromotions = \[\];/, 'ต้องประกาศ promotion state ใน module scope อย่างชัดเจน');
+assert.match(source, /const form = event\.currentTarget;[\s\S]*readForm\(form, home, currentPromotions\);/, 'submit ต้องจับ form ก่อน serialize currentPromotions เพื่อไม่ให้ currentTarget เป็น null');
+assert.doesNotMatch(source, /readForm\(event\.currentTarget, home, currentPromotions\)/, 'ห้ามอ่าน currentTarget โดยตรงใน readForm');
+assert.doesNotMatch(source, /readForm\(event\.currentTarget, home, promotions\)/, 'ห้ามย้อนกลับไป serialize promotions array เดิม');
 
 console.log('PASS: Content Studio dynamic promotion state และ safe downstream contract ถูก serialize/preserve ครบ');
