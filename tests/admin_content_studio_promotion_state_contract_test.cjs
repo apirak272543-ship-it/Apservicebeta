@@ -28,7 +28,10 @@ assert.match(readForm, /placement:\s*row\?\.placement/, 'readForm ต้อง�
 assert.match(readForm, /approval_status:\s*row\?\.approval_status/, 'readForm ต้องไม่ตัด approval_status ทิ้ง');
 
 assert.match(source, /let currentPromotions = \[\];/, 'ต้องประกาศ promotion state ใน module scope อย่างชัดเจน');
-assert.match(source, /const form = event\.currentTarget;[\s\S]*readForm\(form, home, currentPromotions\);/, 'submit ต้องจับ form ก่อน serialize currentPromotions เพื่อไม่ให้ currentTarget เป็น null');
+assert.match(source, /const form = host\.querySelector\('#customerContentForm'\);[\s\S]*readSection\(form, home, currentPromotions, section\);/, 'submit รายหมวดต้องใช้ form เดียวกันและ serialize state ผ่าน readSection');
+assert.match(source, /data-content-save=/, 'แต่ละหมวดต้องมีปุ่มบันทึกแยกของตัวเอง');
+assert.match(source, /if \(section !== 'promotions'\)/, 'การบันทึกหมวดทั่วไปต้องเขียนเฉพาะ brand_public');
+assert.match(source, /section === 'promotions' \|\| section === 'all'/, 'การบันทึก Banner ต้องเขียน customer_promotions แยก');
 assert.doesNotMatch(source, /readForm\(event\.currentTarget, home, currentPromotions\)/, 'ห้ามอ่าน currentTarget โดยตรงใน readForm');
 assert.doesNotMatch(source, /readForm\(event\.currentTarget, home, promotions\)/, 'ห้ามย้อนกลับไป serialize promotions array เดิม');
 
