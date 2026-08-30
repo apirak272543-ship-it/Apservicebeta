@@ -72,7 +72,7 @@
   async function gate(active, content) {
     app(active, content);
     const access = await M.auth.requireRole('admin', { loginUrl: 'index.html', container: $('[data-page-content]'), renderLoading: false });
-    if (access) startNavBadges();
+    if (access) { window.APServiceAdminRuntime.user = access.user; startNavBadges(); }
     return access;
   }
   async function login() {
