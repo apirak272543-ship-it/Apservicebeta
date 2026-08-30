@@ -79,6 +79,7 @@
     const url = new URL(location.href);
     const recoveryState = url.searchParams.get('recovery') || '';
     const passwordReset = url.searchParams.get('password_reset') === '1';
+    if (!recoveryState && !passwordReset) { try { await M.auth.sessionRestoreReady; const existing = await M.auth.currentUser(); const roles = existing ? await M.auth.rolesFor(existing.id) : []; if (existing && roles.includes('admin')) { location.replace('dashboard.html'); return; } } catch (_) {} }
     let recoverySession = null;
     if (recoveryState === '1' || recoveryState === 'update' || location.hash.includes('access_token=') || url.searchParams.get('type') === 'recovery') {
       try { recoverySession = await M.auth.acceptRecoveryFromHash?.(); } catch (_) { recoverySession = null; }
