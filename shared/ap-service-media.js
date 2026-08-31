@@ -229,6 +229,22 @@
     return `${String(url).replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(bucket)}/${path.split('/').map(encodeURIComponent).join('/')}?v=${encodeURIComponent(Math.max(1, Number(version) || 1))}`;
   }
 
+  function publicStorageReference(value) { try { const parsed = new URL(String(value || '')); const marker = '/storage/v1/object/public/'; const index = parsed.pathname.indexOf(marker); if (index < 0) return null; const tail = parsed.pathname.slice(index + marker.length).split('/'); const bucket = decodeURIComponent(tail.shift() || ''); const path = tail.map(part => decodeURIComponent(part)).join('/'); return bucket && path ? { bucket, path } : null; } catch (_) { return null; } }
+
+  async function cleanupReplacedPublicMedia({ url, publishableKey, accessToken, oldUrl, newUrl, bucket, pathPrefix = '' } = {}) {
+    const oldRef = publicStorageReference(oldUrl); const newRef = publicStorageReference(newUrl);
+    if (!oldRef || !oldRef.path || (newRef && oldRef.bucket === newRef.bucket && oldRef.path === newRef.path)) return { deleted: false, reason: 'same-or-unmanaged' };
+    const expectedBucket = String(bucket || oldRef.bucket); const prefix = String(pathPrefix || '').replace(/^\/+|\/+$/g, '');
+    if (oldRef.bucket !== expectedBucket || (prefix && !oldRef.path.startsWith(`${prefix}/`))) return { deleted: false, reason: 'outside-scope' };
+    const base = String(url || '').replace(/\/$/, ''); const commonHeaders = { apikey: publishableKey, Authorization: `Bearer ${accessToken}` };
+    const lookup = await fetch(`${base}/rest/v1/media_assets?select=id&bucket_id=eq.${encodeURIComponent(oldRef.bucket)}&storage_path=eq.${encodeURIComponent(oldRef.path)}&limit=1`, { headers: commonHeaders });
+    const rows = await lookup.json().catch(() => []); if (!lookup.ok) return { deleted: false, reason: 'metadata-lookup-failed' };
+    const remove = await fetch(`${base}/storage/v1/object/${encodeURIComponent(oldRef.bucket)}`, { method: 'DELETE', headers: { ...commonHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: [oldRef.path] }) });
+    if (!remove.ok && remove.status !== 404) return { deleted: false, reason: 'storage-delete-failed' };
+    if (rows?.[0]?.id) { const metadataDelete = await fetch(`${base}/rest/v1/media_assets?id=eq.${encodeURIComponent(rows[0].id)}`, { method: 'DELETE', headers: { ...commonHeaders, Prefer: 'return=minimal' } }); if (!metadataDelete.ok) return { deleted: false, reason: 'metadata-delete-failed' }; }
+    return { deleted: true, path: oldRef.path, mediaId: rows?.[0]?.id || null };
+  }
+
   async function getMediaMetadata({ url, publishableKey, accessToken, mediaId } = {}) {
     if (!url || !publishableKey || !mediaId) fail('ข้อมูลไม่ครบสำหรับอ่าน Media metadata');
     const response = await fetch(`${String(url).replace(/\/$/, '')}/rest/v1/media_assets?id=eq.${encodeURIComponent(mediaId)}&select=id,bucket_id,storage_path,visibility,variant,version,status,mime_type,byte_size,width,height,media_type`, { headers: { apikey: publishableKey, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) } });
@@ -314,6 +330,7 @@
     createSignedImageUrl,
     registerMediaAsset,
     getMediaMetadata,
+    cleanupReplacedPublicMedia,
     getMedia,
     publicMediaUrl,
     verifyRenderableUrl,

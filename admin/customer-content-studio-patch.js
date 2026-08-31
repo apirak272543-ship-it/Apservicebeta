@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const M = window.APServiceMPA;
+  const M = window.APServiceMPA; const stableJson = value => JSON.stringify(value, (_, item) => item && typeof item === 'object' && !Array.isArray(item) ? Object.keys(item).sort().reduce((out, key) => { out[key] = item[key]; return out; }, {}) : item);
   if (!M) return;
 
   const esc = value => M.ui.escapeHtml(String(value ?? ''));
@@ -163,8 +163,8 @@
         const accessToken = session?.access_token || M.auth.getSession?.()?.access_token;
         const actorId = session?.user?.id || access.user.id;
         if (!accessToken || !actorId) throw new Error('เซสชัน Admin ไม่พร้อมสำหรับอัปโหลดรูปภาพ กรุณาเข้าสู่ระบบใหม่');
-        const uploaded = await window.APServiceMedia.uploadPublicImage(file, { ...M.config, accessToken, actorId, bucket: 'catalog-media', scope: 'customer-home', pathPrefix: 'admin', mediaType: input.dataset.mediaType || 'ADMIN_MEDIA', ownerType: 'admin', variant: name, legacySource: { field: name, source: 'customer-content-studio' } });
-        if (value) value.value = uploaded.publicUrl;
+        const previousUrl = value?.value || ''; const uploaded = await window.APServiceMedia.uploadPublicImage(file, { ...M.config, accessToken, actorId, bucket: 'catalog-media', scope: 'customer-home', pathPrefix: 'admin', mediaType: input.dataset.mediaType || 'ADMIN_MEDIA', ownerType: 'admin', variant: name, legacySource: { field: name, source: 'customer-content-studio' } });
+        if (value) { if (previousUrl && previousUrl !== uploaded.publicUrl) value.dataset.previousMediaUrl = previousUrl; value.dataset.pendingMediaPath = uploaded.path || ''; value.value = uploaded.publicUrl; }
         if (preview) preview.innerHTML = `<img src="${esc(uploaded.publicUrl)}" alt="ตัวอย่างสื่อที่ตรวจแล้ว">`;
         if (status) status.textContent = `อัปโหลดและตรวจสอบแล้ว · ${Math.ceil(Number(uploaded.bytes || 0) / 1024)} KB · ${uploaded.mediaId}`;
         notice('อัปโหลดและเตรียมรูปภาพแล้ว กดบันทึก Content เพื่อเผยแพร่');
@@ -183,6 +183,8 @@
     });
     void refresh;
   }
+
+  async function cleanupPendingMedia(root, access) { const token = M.auth.getSession?.()?.access_token; const actorId = access?.user?.id; if (!token || !actorId || !window.APServiceMedia?.cleanupReplacedPublicMedia) return; for (const input of root.querySelectorAll('[data-content-field][data-previous-media-url]')) { const oldUrl = input.dataset.previousMediaUrl; const newUrl = input.value; try { await window.APServiceMedia.cleanupReplacedPublicMedia({ ...M.config, accessToken: token, oldUrl, newUrl, bucket: 'catalog-media', pathPrefix: 'admin' }); } catch (error) { console.warn('ลบสื่อเก่าหลังแทนที่ไม่สำเร็จ', error); } delete input.dataset.previousMediaUrl; delete input.dataset.pendingMediaPath; } }
 
   function localizeContentStudioCopy(root) {
     const copy = new Map([
@@ -246,7 +248,8 @@
             await request('admin_action_audit', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ actor_id: access.user.id, action: `customer_content_${section}_updated`, reason: `แก้ไข Customer Content Studio หมวด ${section}`, before_state: { customerHome: home, promotions }, after_state: next, created_at: iso() }) }).catch(error => console.warn('บันทึก audit ไม่สำเร็จ', error));
             const verifyKeys = section === 'promotions' ? ['customer_promotions'] : section === 'all' ? ['brand_public', 'customer_promotions'] : ['brand_public'];
             const verified = await Promise.all(verifyKeys.map(key => request(`platform_configs?select=key,value&key=eq.${key}&limit=1`, { forceFresh: true })));
-            if (verified.some((rows, index) => !rows?.[0] || JSON.stringify(rows[0].value) !== JSON.stringify(index === 0 && section === 'promotions' ? { ...promotionConfig, items: next.promotions } : index === 0 && section !== 'promotions' ? { ...sourceBrand, customerHome: next.home } : { ...promotionConfig, items: next.promotions }))) throw new Error('บันทึกแล้วแต่ตรวจสอบข้อมูลจากฐานข้อมูลไม่ตรงกัน กรุณาลองใหม่');
+            if (verified.some((rows, index) => !rows?.[0] || stableJson(rows[0].value) !== stableJson(index === 0 && section === 'promotions' ? { ...promotionConfig, items: next.promotions } : index === 0 && section !== 'promotions' ? { ...sourceBrand, customerHome: next.home } : { ...promotionConfig, items: next.promotions }))) throw new Error('บันทึกแล้วแต่ตรวจสอบข้อมูลจากฐานข้อมูลไม่ตรงกัน กรุณาลองใหม่');
+            await cleanupPendingMedia(host, access);
             notice(section === 'all' ? 'บันทึก Customer Content และ Banner แล้ว' : `บันทึกหมวด ${section} แล้ว`);
             await load();
           } catch (error) { notice(`บันทึก Content ไม่สำเร็จ: ${error.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'}`, 'error'); }
