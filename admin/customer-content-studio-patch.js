@@ -85,7 +85,7 @@
 
   function readForm(form, home, promotions) {
     if (!form?.elements) throw new Error('ไม่พบฟอร์ม Content Studio กรุณารีเฟรชหน้าแล้วลองใหม่');
-    const value = name => String(form.elements[name]?.value || '').trim();
+    const control = name => form.querySelector(`[name="${CSS.escape(name)}"]`); const value = name => String(control(name)?.value || '').trim();
     const bool = name => value(name) === 'true';
     const next = typeof structuredClone === 'function' ? structuredClone(home) : JSON.parse(JSON.stringify(home));
     next.hero = { ...next.hero, eyebrow: value('hero.eyebrow'), title: value('hero.title'), description: value('hero.description'), backgroundUrl: value('hero.backgroundUrl'), artUrl: value('hero.artUrl'), overlay: value('hero.overlay'), textColor: safeColor(value('hero.textColor'), '#ffffff'), primaryAction: { label: value('hero.primaryAction.label'), href: safeHref(value('hero.primaryAction.href')) || 'stores.html', enabled: bool('hero.primaryAction.enabled') }, secondaryAction: { label: value('hero.secondaryAction.label'), href: safeHref(value('hero.secondaryAction.href')) || 'stores.html', enabled: bool('hero.secondaryAction.enabled') } };
@@ -238,12 +238,15 @@
           try {
             const next = readSection(form, home, currentPromotions, section);
             if (section !== 'promotions') {
-              await request('platform_configs?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ key: 'brand_public', value: { ...sourceBrand, customerHome: next.home }, updated_at: iso() }) });
+              await request('platform_configs?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ key: 'brand_public', value: { ...sourceBrand, customerHome: next.home }, updated_at: iso() }]) });
             }
             if (section === 'promotions' || section === 'all') {
-              await request('platform_configs?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ key: 'customer_promotions', value: { ...promotionConfig, items: next.promotions }, updated_at: iso() }) });
+              await request('platform_configs?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ key: 'customer_promotions', value: { ...promotionConfig, items: next.promotions }, updated_at: iso() }]) });
             }
             await request('admin_action_audit', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ actor_id: access.user.id, action: `customer_content_${section}_updated`, reason: `แก้ไข Customer Content Studio หมวด ${section}`, before_state: { customerHome: home, promotions }, after_state: next, created_at: iso() }) }).catch(error => console.warn('บันทึก audit ไม่สำเร็จ', error));
+            const verifyKeys = section === 'promotions' ? ['customer_promotions'] : section === 'all' ? ['brand_public', 'customer_promotions'] : ['brand_public'];
+            const verified = await Promise.all(verifyKeys.map(key => request(`platform_configs?select=key,value&key=eq.${key}&limit=1`, { forceFresh: true })));
+            if (verified.some((rows, index) => !rows?.[0] || JSON.stringify(rows[0].value) !== JSON.stringify(index === 0 && section === 'promotions' ? { ...promotionConfig, items: next.promotions } : index === 0 && section !== 'promotions' ? { ...sourceBrand, customerHome: next.home } : { ...promotionConfig, items: next.promotions }))) throw new Error('บันทึกแล้วแต่ตรวจสอบข้อมูลจากฐานข้อมูลไม่ตรงกัน กรุณาลองใหม่');
             notice(section === 'all' ? 'บันทึก Customer Content และ Banner แล้ว' : `บันทึกหมวด ${section} แล้ว`);
             await load();
           } catch (error) { notice(`บันทึก Content ไม่สำเร็จ: ${error.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'}`, 'error'); }
