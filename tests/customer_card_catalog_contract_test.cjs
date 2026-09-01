@@ -1,6 +1,6 @@
 const fs = require('fs');
-const admin = fs.readFileSync('/home/ubuntu/Apservicebeta/admin/customer-content-studio-patch.js', 'utf8');
-const customer = fs.readFileSync('/home/ubuntu/Apservice-/customer/customer-content-runtime.js', 'utf8');
+const admin = fs.readFileSync('/home/ubuntu/apservice-admin-app/admin/customer-content-studio-patch.js', 'utf8');
+const customer = fs.readFileSync('/home/ubuntu/apservice-customer-app/customer/customer-content-runtime.js', 'utf8');
 const expected = [
   ['Admin default Parcel card', admin, "id: 'parcel'"],
   ['Admin add card action', admin, 'data-card-action="add"'],
