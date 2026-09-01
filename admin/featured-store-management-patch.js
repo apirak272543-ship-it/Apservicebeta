@@ -72,7 +72,9 @@
       const fallbackToAuto = panel.querySelector('[data-featured-fallback]')?.value !== 'false';
       const nextRoot = { ...state.rootConfig, featuredStores: { mode, limit, fallbackToAuto } };
       try {
-        await request('platform_configs?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ key: 'customer_promotions', value: nextRoot, updated_at: nowIso() }) });
+        await request('platform_configs?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ key: 'customer_promotions', value: nextRoot, updated_at: nowIso() }]) });
+        const saved = await request('platform_configs?select=value&key=eq.customer_promotions&limit=1', { forceFresh: true });
+        if (!saved?.[0] || JSON.stringify(saved[0].value) !== JSON.stringify(nextRoot)) throw new Error('บันทึกแล้วแต่ตรวจสอบการตั้งค่าร้านค้าเด่นจากฐานข้อมูลไม่ตรงกัน กรุณาลองใหม่');
         await request('admin_action_audit', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ action: 'featured_stores_config_updated', reason: 'แก้ไขรูปแบบร้านค้าเด่นจาก Customer Content Studio', before_state: { featuredStores: state.config }, after_state: { featuredStores: nextRoot.featuredStores }, created_at: nowIso() }) }).catch(() => {});
         notify('บันทึกการแสดงผลร้านค้าเด่นแล้ว');
         await refresh();
