@@ -7,7 +7,7 @@
   const DEFAULT_MAX_DIMENSION = 1600;
   const ACCEPTED_IMAGE_TYPES = Object.freeze(['image/jpeg', 'image/png', 'image/webp']);
   const MEDIA_PROFILES = Object.freeze({
-    STORE_LOGO: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }), USER_AVATAR: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }), RIDER_AVATAR: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }),
+    STORE_LOGO: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }), USER_AVATAR: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }), RIDER_AVATAR: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }), CUSTOMER_BACKGROUND: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
     PRODUCT_IMAGE: Object.freeze({ maxDimension: 1280, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), RETAIL_PRODUCT_IMAGE: Object.freeze({ maxDimension: 1200, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES, outputMimeType: 'image/jpeg', quality: 0.82 }), STORE_BACKGROUND: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
     BANNER: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), ADVERTISEMENT: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), PROMOTION: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
     PAYMENT_SLIP: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), DELIVERY_PROOF: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
