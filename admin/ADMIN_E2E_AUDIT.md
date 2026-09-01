@@ -53,7 +53,7 @@
 
 ## บัญชีและสิทธิ์
 
-- ตรวจหน้า `https://apirak272543-ship-it.github.io/Apservicebeta/admin/profile.html` เมื่อ 20 สิงหาคม 2569 พบ **404** เพราะไม่มีไฟล์ `profile.html` ใน repository ขณะที่หน้าจัดการบัญชีที่เผยแพร่จริงคือ `accounts.html`
+- ตรวจหน้า `https://apirak272543-ship-it.github.io/apservice-admin-app/admin/profile.html` เมื่อ 20 สิงหาคม 2569 พบ **404** เพราะไม่มีไฟล์ `profile.html` ใน repository ขณะที่หน้าจัดการบัญชีที่เผยแพร่จริงคือ `accounts.html`
 - เปิด `accounts.html` ด้วย session Admin สำเร็จ พบตัวกรองทุกบัญชี/Admin/ลูกค้า/ร้านค้า/Rider และปุ่มเพิ่มบัญชี แต่ต้องรอให้ Account Control Plane โหลด และต้องเพิ่มเส้นทาง compatibility สำหรับ `profile.html` เพื่อไม่ให้กลายเป็น dead link
 - หลัง Account Control Plane โหลด หน้าแสดงบัญชีจริง 15 รายการ, รองรับค้นหาด้วยชื่อ/อีเมล/โทรศัพท์/Login ID/รหัสผู้ใช้ และกรองตามบทบาทได้
 - กด **จัดการบัญชี** บนรายการจริงแล้วเปิด modal ของบัญชีได้ ไม่เป็นปุ่มตาย; ระหว่างตรวจไม่ได้บันทึกหรือแก้ไขข้อมูลบัญชีจริง
