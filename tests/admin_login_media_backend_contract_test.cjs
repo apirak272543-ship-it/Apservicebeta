@@ -19,10 +19,10 @@ assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.admin_upsert_login_ba
 assert.match(migration, /private\.is_platform_owner_or_master\(\)/);
 
 const consumerFiles = [
-  ['Apservice-', 'Customer'],
-  ['Apservicebeta', 'Admin'],
+  ['apservice-customer-app', 'Customer'],
+  ['apservice-admin-app', 'Admin'],
   ['ap-store-mobile', 'Merchant'],
-  ['ap-rider-mobile', 'Rider'],
+  ['apservice-rider-app', 'Rider'],
   ['ap-retail-pos', 'Retail POS'],
 ];
 for (const [repo, label] of consumerFiles) {
