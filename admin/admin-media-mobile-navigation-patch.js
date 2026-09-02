@@ -175,6 +175,8 @@
   function bind() {
     const contentForm = form();
     if (!contentForm) return;
+    const existingDashboard = document.querySelector('#adminMediaDashboard');
+    if (existingDashboard?.dataset.mediaNavBound === 'true') { ensureVisualNavigation(); return; }
     const dashboard = buildDashboard(contentForm);
     if (!dashboard || dashboard.dataset.mediaNavBound === 'true') return;
     dashboard.dataset.mediaNavBound = 'true';
