@@ -610,5 +610,5 @@
   }
   window.APServiceAdminRuntime = { M, C, $, h, icon, pageScope, app, gate, applyAdminTheme, themeSettingsMarkup, user: null };
   const patchedRoute = window.APServiceAdminPatch?.[page];
-  (patchedRoute || ({ login, dashboard, orders, stores: storesV3, promotions, coupons: () => window.APServiceAdminCoupons?.mount?.() || login(), media: mediaV2, operations: operationsV2, accounts: () => operationsV2('admins'), profile, customers, riders, finance, notifications: notificationsV2, 'audit-log': () => window.APServiceAdminAuditLog?.mount?.() || login(), 'ai-workspace': aiWorkspace, settings }[page] || login))();
+  (patchedRoute || ({ login, dashboard, orders, stores: storesV3, promotions, coupons: () => { if (window.APServiceAdminCoupons?.mount) return window.APServiceAdminCoupons.mount(); return login(); }, media: mediaV2, operations: operationsV2, accounts: () => operationsV2('admins'), profile, customers, riders, finance, notifications: notificationsV2, 'audit-log': () => window.APServiceAdminAuditLog?.mount?.() || login(), 'ai-workspace': aiWorkspace, settings }[page] || login))();
 })();
