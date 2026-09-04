@@ -23,5 +23,4 @@
     gate('operations', '<div id="coupons">กำลังโหลดระบบคูปอง…</div>').then(access => { if (access !== false) load(); });
   };
   window.APServiceAdminCoupons = { mount: boot };
-  boot();
 })();
