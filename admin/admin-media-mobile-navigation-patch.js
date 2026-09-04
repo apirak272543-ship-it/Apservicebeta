@@ -9,6 +9,7 @@
   const state = {
     route: 'dashboard',
     visualRoute: 'index',
+    visualPageKey: '',
     dashboardSignature: '',
     visualSignature: '',
   };
@@ -168,6 +169,8 @@
 
     state.route = key;
     state.visualRoute = 'index';
+    state.visualPageKey = '';
+    contentForm.dataset.mediaHubRestoredRoute = key;
     setHidden(dashboard, true);
     setHidden(visualMount(), true);
     setHidden(contentForm, false);
@@ -196,6 +199,8 @@
     if (!contentForm || !dashboard) return;
     state.route = 'dashboard';
     state.visualRoute = 'index';
+    state.visualPageKey = '';
+    contentForm.dataset.mediaHubRestoredRoute = 'dashboard';
     clearRouteStatus(contentForm);
     setHidden(contentForm, true);
     $$('.admin-content-panel', contentForm).forEach(panel => setHidden(panel, true));
@@ -262,6 +267,7 @@
     const mount = visualMount();
     if (!contentForm || !dashboard || !mount) return;
     state.route = 'visuals';
+    contentForm.dataset.mediaHubRestoredRoute = 'visuals';
     setHidden(dashboard, true);
     setHidden(contentForm, true);
     setHidden(mount, false);
@@ -296,6 +302,7 @@
     const { visualSettings, index } = built;
     state.route = 'visuals';
     state.visualRoute = 'index';
+    state.visualPageKey = '';
     clearVisualStatus(mount);
     setHidden(index, false);
     setHidden(visualSettings, true);
@@ -317,6 +324,7 @@
 
     if (key === 'visual-pages') {
       state.visualRoute = 'pages';
+      state.visualPageKey = '';
       const pageMenu = ensurePageMenu(mount, pages);
       setHidden(visualSettings, false);
       setHidden(detail, true);
@@ -330,6 +338,7 @@
     }
 
     state.visualRoute = key === 'visual-default' ? 'default' : 'festival';
+    state.visualPageKey = '';
     setHidden(visualSettings, false);
     setHidden($('[data-visual-page-menu]', mount), true);
     setHidden(detail, false);
@@ -350,6 +359,7 @@
     const pageSection = $('.customer-visual-page-list', visualSettings)?.closest('section');
     state.route = 'visuals';
     state.visualRoute = 'page';
+    state.visualPageKey = pageKey;
     setHidden(index, true);
     setHidden(pageMenu, true);
     setHidden(visualSettings, false);
@@ -391,6 +401,21 @@
     });
   }
 
+  function restoreRoute() {
+    const contentForm = form();
+    const requested = contentForm?.dataset.mediaHubRestoredRoute || 'dashboard';
+    if (!contentForm || !$('#adminMediaDashboard')) return;
+    if (requested === 'dashboard') {
+      showDashboard();
+      return;
+    }
+    if (requested === 'visuals') {
+      if (visualMount()?.querySelector('.customer-visual-settings')) openVisualSystem();
+      return;
+    }
+    openMainEntry(requested);
+  }
+
   function bind() {
     const contentForm = form();
     if (!contentForm) return;
@@ -409,6 +434,7 @@
         const retry = event.target.closest('[data-media-retry]');
         if (retry) openMainEntry(retry.dataset.mediaRetry);
       });
+      restoreRoute();
     }
     if (dashboard.dataset.mediaHubBound !== 'true') {
       dashboard.dataset.mediaHubBound = 'true';
