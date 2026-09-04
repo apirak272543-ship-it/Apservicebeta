@@ -195,7 +195,7 @@
         const menu = mount.querySelector('[data-visual-page-menu]');
         const section = mount.querySelector('.customer-visual-page-list')?.closest('section');
         if (menu) menu.hidden = true;
-        if (section) section.hidden = true;
+        if (section) section.hidden = false;
         mount.querySelectorAll('[data-visual-form]').forEach(item => { item.hidden = item !== target; });
         const detail = visualDetailBar(mount, target?.querySelector('h3')?.textContent || 'พื้นหลังและ Motion เฉพาะหน้า');
         detail.hidden = false;
