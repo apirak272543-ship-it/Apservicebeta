@@ -115,13 +115,38 @@
     return { visualSettings, index, pages };
   }
 
+  function visualDetailBar(mount, title) {
+    let bar = mount.querySelector('[data-visual-detailbar]');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'admin-media-detail-bar';
+      bar.dataset.visualDetailbar = 'true';
+      bar.innerHTML = '<button type="button" class="mpa-button mpa-button-secondary" data-visual-detail-back>‹ กลับไปเมนูพื้นหลัง</button><span data-visual-detail-title></span>';
+      mount.querySelector('.customer-visual-settings')?.before(bar);
+    }
+    bar.querySelector('[data-visual-detail-title]')?.replaceChildren(document.createTextNode(title || 'รายละเอียดพื้นหลังและ Motion'));
+    return bar;
+  }
+
+  function showVisualIndex(mount) {
+    const built = buildVisualIndex(mount);
+    if (!built) return;
+    built.index.hidden = false;
+    built.visualSettings.hidden = true;
+    mount.querySelector('[data-visual-page-menu]')?.setAttribute('hidden', '');
+    mount.querySelector('[data-visual-detailbar]')?.setAttribute('hidden', '');
+    mount.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   function openVisualEntry(key) {
     const mount = visualMount();
     if (!mount) return;
     const built = buildVisualIndex(mount);
     if (!built) return;
     const { visualSettings, index, pages } = built;
+    const detail = visualDetailBar(mount, key === 'visual-pages' ? 'เลือกหน้าที่ต้องการตั้งค่า' : key === 'visual-default' ? 'ค่าเริ่มต้นทุกหน้า' : 'เทศกาลและฤดูกาล');
     if (key === 'visual-pages') {
+      detail.hidden = true;
       index.hidden = true;
       visualSettings.hidden = false;
       visualSettings.querySelectorAll('[data-visual-form="default"], [data-visual-form="festival"]').forEach(item => { item.hidden = true; });
@@ -158,15 +183,22 @@
       const visualEntry = event.target.closest('[data-media-entry]');
       if (visualEntry?.dataset.mediaEntry.startsWith('visual-')) { openVisualEntry(visualEntry.dataset.mediaEntry); return; }
       if (event.target.closest('[data-visual-back]')) { showDashboard(); return; }
-      if (event.target.closest('[data-visual-index]')) { buildVisualIndex(mount); return; }
+      if (event.target.closest('[data-visual-index]')) { showVisualIndex(mount); return; }
+      if (event.target.closest('[data-visual-detail-back]')) {
+        const pageForm = [...mount.querySelectorAll('[data-visual-form="page"]')].find(item => !item.hidden);
+        if (pageForm) openVisualEntry('visual-pages'); else showVisualIndex(mount);
+        return;
+      }
       const page = event.target.closest('[data-visual-page]');
       if (page) {
         const target = mount.querySelector(`[data-visual-form="page"][data-visual-key="${CSS.escape(page.dataset.visualPage)}"]`);
         const menu = mount.querySelector('[data-visual-page-menu]');
         const section = mount.querySelector('.customer-visual-page-list')?.closest('section');
         if (menu) menu.hidden = true;
-        if (section) section.hidden = false;
+        if (section) section.hidden = true;
         mount.querySelectorAll('[data-visual-form]').forEach(item => { item.hidden = item !== target; });
+        const detail = visualDetailBar(mount, target?.querySelector('h3')?.textContent || 'พื้นหลังและ Motion เฉพาะหน้า');
+        detail.hidden = false;
         target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
