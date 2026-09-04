@@ -694,3 +694,13 @@ body[data-page="dashboard"] #stats .admin-stat-link small {
   line-height: 1.5;
 }
 body[data-page="dashboard"] #stats .admin-stat-link:hover strong { color: #a92f46; }
+
+/* Admin audit polish: compact notification refresh control and safe profile identity wrapping. */
+.admin-refresh-button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.admin-profile-email { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+@media (max-width: 760px) {
+  .admin-refresh-button { width: auto !important; margin-top: 0 !important; align-self: flex-start; }
+  .admin-current-profile-heading { min-width: 0; }
+  .admin-current-profile-heading h2 { overflow-wrap: anywhere; word-break: break-word; }
+  .admin-profile-email { font-size: 12px; }
+}
