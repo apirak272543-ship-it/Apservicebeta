@@ -10,6 +10,7 @@ assert.ok(normalizedStart >= 0 && normalizedEnd > normalizedStart, 'ต้อง
 const normalized = source.slice(normalizedStart, normalizedEnd);
 assert.match(normalized, /placement:\s*row\?\.placement/, 'ต้อง preserve placement ของ promotion เดิม/ใหม่');
 assert.match(normalized, /approval_status:\s*row\?\.approval_status/, 'normalize ต้องอ่าน approval_status เดิมเพื่อความเข้ากันได้');
+assert.match(normalized, /clarity:\s*clamp\(row\?\.clarity/, 'ต้องมีค่าเริ่มต้นความชัดสำหรับ Banner เดิม');
 
 const blankStart = source.indexOf('const blankPromotion =');
 const blankEnd = source.indexOf(';', blankStart);
@@ -26,6 +27,7 @@ const readForm = source.slice(readFormStart, readFormEnd);
 assert.match(readForm, /const nextPromotions = promotions\.map/, 'readForm ต้อง serialize promotion state ที่ส่งเข้ามา');
 assert.match(readForm, /placement:\s*row\?\.placement/, 'readForm ต้องไม่ตัด placement ทิ้ง');
 assert.match(readForm, /approval_status:\s*'approved'/, 'เมื่อ Admin บันทึกต้องกำหนดสถานะเผยแพร่เสมอ');
+assert.match(readForm, /clarity:\s*clamp\(value\(`promo\.\$\{index\}\.clarity`\)/, 'เมื่อ Admin บันทึกต้อง serialize ค่าความชัดของ Banner');
 
 assert.match(source, /let currentPromotions = \[\];/, 'ต้องประกาศ promotion state ใน module scope อย่างชัดเจน');
 assert.match(source, /const form = host\.querySelector\('#customerContentForm'\);[\s\S]*readSection\(form, home, currentPromotions, section\);/, 'submit รายหมวดต้องใช้ form เดียวกันและ serialize state ผ่าน readSection');
