@@ -1,0 +1,14 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const source = fs.readFileSync('admin/admin-control-plane-patch.js', 'utf8');
+const html = fs.readFileSync('admin/orders.html', 'utf8');
+const css = fs.readFileSync('admin/admin-orders.css', 'utf8');
+assert.match(source, /data-order-tab="new"/, 'Orders ต้องมีคิวออเดอร์ใหม่');
+assert.match(source, /data-order-tab="active"/, 'Orders ต้องมีคิวกำลังดำเนินการ');
+assert.match(source, /data-order-tab="history"/, 'Orders ต้องมีคิวปิดงานแล้ว');
+assert.match(source, /data-status-filter/, 'Orders ต้องกรองต่อด้วยสถานะย่อย');
+assert.match(source, /admin-order-status-group/, 'Orders ต้องจัดกลุ่มการ์ดตามสถานะ');
+assert.match(source, /payment_method/, 'การ์ด Orders ต้องแสดงวิธีชำระเงิน');
+assert.match(html, /admin-control-plane-patch\.js\?v=control-plane-v7-order-workflow-v2/, 'หน้า Orders ต้องโหลด renderer รุ่นใหม่');
+assert.match(css, /\.admin-order-status-group/, 'CSS ต้องรองรับกลุ่มสถานะ');
+console.log('admin_orders_workflow_contract_test: PASS');
