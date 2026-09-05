@@ -9,6 +9,6 @@ assert.match(source, /data-order-tab="history"/, 'Orders ต้องมีค�
 assert.match(source, /data-status-filter/, 'Orders ต้องกรองต่อด้วยสถานะย่อย');
 assert.match(source, /admin-order-status-group/, 'Orders ต้องจัดกลุ่มการ์ดตามสถานะ');
 assert.match(source, /payment_method/, 'การ์ด Orders ต้องแสดงวิธีชำระเงิน');
-assert.match(html, /admin-control-plane-patch\.js\?v=control-plane-v7-order-workflow-v2/, 'หน้า Orders ต้องโหลด renderer รุ่นใหม่');
+assert.match(html, /admin-control-plane-patch\.js\?v=control-plane-v8-detail-menu-status/, 'หน้า Orders ต้องโหลด renderer รุ่นใหม่');
 assert.match(css, /\.admin-order-status-group/, 'CSS ต้องรองรับกลุ่มสถานะ');
 console.log('admin_orders_workflow_contract_test: PASS');
